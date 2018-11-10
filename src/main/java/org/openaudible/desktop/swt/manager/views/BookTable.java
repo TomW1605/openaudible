@@ -67,7 +67,7 @@ public class BookTable extends EnumTable<Book, BookTableColumn> implements BookL
 			table.addListener(SWT.MeasureItem, paintListener);
 			table.addListener(SWT.PaintItem, paintListener);
 		}
-		
+
 	}
 	
 	@Override
@@ -95,6 +95,11 @@ public class BookTable extends EnumTable<Book, BookTableColumn> implements BookL
 	AtomicInteger cache = new AtomicInteger();
 	
 	public void populate() {
+		/*TableColumn[] columns = this.getTable().getColumns();
+		for (TableColumn column:columns)
+		{
+			//column.pack();
+		}*/
 		if (cache.getAndIncrement() == 0) {
 			SWTAsync.run(new SWTAsync("populate_table") {
 				@Override
@@ -157,12 +162,14 @@ public class BookTable extends EnumTable<Book, BookTableColumn> implements BookL
 				// compare duration as seconds, not as a string..
 				return TimeToSeconds.parseTimeStringToSeconds(b.getDuration());
 			case Title:
-				return b.getFullTitle();
+				return b.getShortTitle();
 			
 			case Released:
 				return b.getReleaseDateSortable();
 			case Purchased:
 				return b.getPurchaseDateSortable();
+			case Task:
+				return AudibleGUI.instance.getTaskString(b);
 			
 			default:
 				assert (false);
@@ -198,6 +205,7 @@ public class BookTable extends EnumTable<Book, BookTableColumn> implements BookL
 			@Override
 			public void task() {
 				redrawItem(book);
+
 			}
 		});
 		

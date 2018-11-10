@@ -1,7 +1,7 @@
 package org.openaudible.desktop.swt.manager.views;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.browser.*;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.openaudible.books.Book;
@@ -13,13 +13,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SummaryPanel implements BookListener {
-	StyledText summary;
-	
+	//StyledText summary;
+	Browser summary;
+
 	SummaryPanel(Composite parent) {
-		summary = new StyledText(parent, SWT.WRAP | SWT.MULTI | SWT.READ_ONLY | SWT.V_SCROLL);
+		/*summary = new StyledText(parent, SWT.WRAP | SWT.MULTI | SWT.READ_ONLY | SWT.V_SCROLL);
 		summary.setCaret(null);
-		summary.setEditable(false);
-		
+		summary.setEditable(false);*/
+		summary = new Browser( parent, SWT.NONE );
+
 		GridData gd = new GridData(GridData.FILL_BOTH | GridData.GRAB_VERTICAL | GridData.GRAB_HORIZONTAL);
 		gd.horizontalSpan = 2;
 		// gd.heightHint = 100;
@@ -54,7 +56,6 @@ public class SummaryPanel implements BookListener {
 	}
 	
 	private void update(Book book) {
-		
 		summary.setText(book != null ? book.getSummary() : "");
 	}
 	

@@ -12,8 +12,6 @@ public class ConnectionNotifier extends EventNotifier<ConnectionListener> implem
 	State state = State.Not_Connected;
 	private static final Log LOG = LogFactory.getLog(ConnectionNotifier.class);
 	
-	private String lastURL = "";
-	
 	
 	private ConnectionNotifier() {
 	}
@@ -35,6 +33,9 @@ public class ConnectionNotifier extends EventNotifier<ConnectionListener> implem
 		
 	}
 	
+	public String lastErrorURL = "";
+	public String lastErrorTitle = "";
+	
 	public boolean isConnected() {
 		return getState() == State.Connected;
 	}
@@ -52,6 +53,7 @@ public class ConnectionNotifier extends EventNotifier<ConnectionListener> implem
 	
 	public void signout() {
 		state = State.SignedOut;
+		ConnectionNotifier.getInstance().connectionChanged(false);
 	}
 	
 	public State getState() {
@@ -66,18 +68,6 @@ public class ConnectionNotifier extends EventNotifier<ConnectionListener> implem
 		return getState() == State.Disconnected;
 	}
 	
-	public String getLastURL() {
-		return lastURL;
-	}
-	
-	public void setLastURL(String lastURL) {
-		this.lastURL = lastURL;
-		if (!lastURL.contains("audible")) {
-			LOG.warn("expected audible");
-		}
-		LOG.info("Setting lastURL to:" + lastURL);
-	}
-	
 	
 	// not connected is unknown.
 	// connected means in account
@@ -88,11 +78,14 @@ public class ConnectionNotifier extends EventNotifier<ConnectionListener> implem
 	
 	
 	@Override
-	public void loginFailed(String url, String html) {
+	public void loginFailed(String url, String title, String xml) {
+		
+		lastErrorTitle = title;
+		lastErrorURL = url;
 		
 		if (state != State.SignedOut) {
 			for (ConnectionListener l : getListeners()) {
-				l.loginFailed(url, html);
+				l.loginFailed(url, title, xml);
 			}
 		}
 		

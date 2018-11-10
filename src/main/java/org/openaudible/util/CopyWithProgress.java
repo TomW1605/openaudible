@@ -29,6 +29,7 @@ public class CopyWithProgress {
 		return "" + k + "K";
 	}
 	
+	
 	public static long copyWithProgress(final IProgressTask p, final File in, final File out) throws IOException {
 		final String totalBytes = byteCountToString(in.length());
 		

@@ -63,13 +63,14 @@ public class Application extends GUI {
 		} catch (Throwable th) {
 			logger.error("error", th);
 		}
+
 		if (GUI.isWindows())
 			shell.setImages(PaintShop.appIcon);
 		
 		shell.setText(getAppName());
 		createLayout();
 		shell.pack();
-		shell.setBounds(20, 25, 790, 790);
+		shell.setBounds(20, 25, 1820, 1300);
 	}
 	
 	public void applicationStarted() {

@@ -163,7 +163,7 @@ public class StatusPanel extends GridComposite implements BookListener, Connecti
 				
 				case AAX_Files:
 				case Books:
-					return false;
+					return true;
 				
 				default:
 					assert (false);
@@ -201,7 +201,7 @@ public class StatusPanel extends GridComposite implements BookListener, Connecti
 	}
 	
 	@Override
-	public void loginFailed(String url, String html) {
+	public void loginFailed(String url, String title, String html) {
 		// TODO Auto-generated method stub
 		
 	}

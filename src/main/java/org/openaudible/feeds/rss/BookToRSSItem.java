@@ -32,7 +32,7 @@ public class BookToRSSItem {
 				.setTitle(b.getFullTitle())
 				.setDescription(b.getDescription())
 				.setAuthor(b.getAuthor())
-				// .setSubtitle(b.set"The One That Made You Wish You Never Liked Start Wars in the First Place")
+				// .setSubtitle(b.set"The One That Made You Wish You Never Liked Star Wars in the First Place")
 				.setSummary(b.getSummary())
 				.setDuration(b.getDuration())
 				.setIsClosedCaptioned(YesNo.NO)

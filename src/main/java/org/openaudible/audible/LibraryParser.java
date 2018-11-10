@@ -21,7 +21,7 @@ public enum LibraryParser {
 	private static final Log LOG = LogFactory.getLog(LibraryParser.class);
 	boolean debug = false;
 	
-	boolean howToListenFound = false;
+	public boolean howToListenFound = false;
 	
 	
 	// Expected Columns:
@@ -59,7 +59,6 @@ public enum LibraryParser {
 				next = a;
 			}
 		}
-		
 		
 		return next;
 	}
@@ -123,7 +122,7 @@ public enum LibraryParser {
 	}
 	
 	
-	String debugString = "OR_ORIG";
+	String debugString = "";
 	
 	
 	private Book parseLibraryRow(HtmlPage p, HtmlTableRow r) {
@@ -142,11 +141,16 @@ public enum LibraryParser {
 			if (debug) HTMLUtil.debugNode(r, "bad_col.xml");
 			return null;
 		}
-		
-		
-		Book b = new Book();
-		
+
 		String asin = HTMLUtil.findHidden(r, "asin");
+
+		if (asin == null)
+		{
+			LOG.info("No asin, Skipping book");
+			return null;
+		}
+
+		Book b = new Book();
 		b.setAsin(asin);
 		
 		
@@ -210,11 +214,11 @@ public enum LibraryParser {
 						
 						if (b.has(BookElement.asin) && href.contains(b.getAsin()))
 							ok = true;
-						
-						if (b.has(BookElement.product_id) && href.contains(b.getProduct_id()))
-							ok = true;
+
+						//if (b.has(BookElement.product_id) && href.contains(b.getProduct_id()))
+						//	ok = true;
+
 						if (ok) {
-							
 							String full_url = String.format("%s://%s%s", protocol, host, href);
 							
 							b.setInfoLink(full_url);
@@ -228,7 +232,7 @@ public enum LibraryParser {
 					if (debug) HTMLUtil.debugNode(cell, col.name() + ".xml");
 					// bug check.
 				}
-				
+				LOG.info("Title = "+text);
 				b.setFullTitle(text);
 				break;
 			case Author:

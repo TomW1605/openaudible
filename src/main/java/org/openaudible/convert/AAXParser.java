@@ -4,9 +4,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.CannotWriteException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.audio.mp4.Mp4FileReader;
+import org.jaudiotagger.audio.mp4.Mp4FileWriter;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.TagException;
 import org.jaudiotagger.tag.TagField;
@@ -14,6 +16,7 @@ import org.jaudiotagger.tag.mp4.Mp4FieldKey;
 import org.jaudiotagger.tag.mp4.Mp4Tag;
 import org.jaudiotagger.tag.mp4.Mp4TagField;
 import org.jaudiotagger.tag.mp4.field.Mp4TagCoverField;
+import org.jaudiotagger.tag.mp4.field.Mp4TagTextField;
 import org.openaudible.Audible;
 import org.openaudible.books.Book;
 import org.openaudible.books.BookElement;
@@ -116,7 +119,7 @@ public enum AAXParser {
 		Mp4FileReader reader = new Mp4FileReader();
 		AudioFile audiofile = reader.read(aaxFile);
 		Mp4Tag tag = (Mp4Tag) audiofile.getTag();
-		tagsToBook(tag, b);
+		tagsToBook(tag, b, audiofile);
 		
 		ffmpeg(b, aaxFile);
 		
@@ -157,7 +160,7 @@ public enum AAXParser {
 						if (imageDest == null || !imageDest.isDirectory())
 							throw new IOException("saveInDirectory doesn't have directory");
 						
-						imageDest = new File(imageDest, b.getProduct_id() + ".jpg");
+						imageDest = new File(imageDest, b.getAsin()+"_"+b.getShortTitle() + ".jpg");
 						if (!imageDest.exists())
 							writeImageToDisk = true;
 						
@@ -296,7 +299,7 @@ public enum AAXParser {
 			AudioFile audiofile = reader.read(aaxFile);
 			Mp4Tag tag = (Mp4Tag) audiofile.getTag();
 			LOG.info("" + audiofile + ", tag=" + tag);
-			tagsToBook(tag, b);
+			tagsToBook(tag, b, audiofile);
 			
 		} catch (Throwable th) {
 			th.printStackTrace();
@@ -327,7 +330,7 @@ public enum AAXParser {
 		
 		File imageDest = Audible.instance.getImageFileDest(book);
 		Book aaxBook = parseAAX(aaxFile, imageDest, imageAction);
-		if (!aaxBook.getProduct_id().equals(book.getProduct_id()))
+		if (!aaxBook.getAsin().equals(book.getAsin()))
 			throw new Exception("product id mismatch for " + book + " and " + aaxBook);
 		for (BookElement e : BookElement.values()) {
 			String value = aaxBook.get(e);
@@ -368,25 +371,45 @@ public enum AAXParser {
 	}
 	
 	
-	public void tagsToBook(Mp4Tag tag, Book b) {
+	public void tagsToBook(Mp4Tag tag, Book b, AudioFile audiofile) {
 		if (LOG.isTraceEnabled())
 			LOG.info(tag);
-		
-		b.set(BookElement.author, getValue(tag, "©ART"));
+
+		b.setAuthor(getValue(tag, "©ART"));
 		b.setNarratedBy(getValue(tag, "©nrt"));
 		b.setFullTitle(getValue(tag, "©nam"));
-		b.setShortTitle(getValue(tag, "@sti"));
+		String sTitle = getValue(tag, "@sti");
 		b.setRelease_date(getValue(tag, "rldt"));
 		b.setPublisher(getValue(tag, "©pub"));
 		b.setProduct_id(getValue(tag, "prID"));
 		b.setSummary(getValue(tag, "©des"));
 		b.setDescription(getValue(tag, "©cmt"));
-		b.setGenre(getValue(tag, "©gen"));
-		b.setShortTitle(getValue(tag, "@sti"));
+		String gen = getValue(tag, "©gen");
 		b.setCopyright(getValue(tag, "cprt"));
 		b.setAsin(getValue(tag, "CDEK"));
-		
-		
+
+		Mp4FileWriter writer = new Mp4FileWriter();
+		Mp4TagTextField field;
+		if (!sTitle.equals(b.getShortTitle())) {
+			field = (Mp4TagTextField) tag.getFirstField("@sti");
+			field.setContent(b.getShortTitle());
+			tag.setField(field);
+		}
+
+		if (!gen.equals(b.getGenre())) {
+			field = (Mp4TagTextField) tag.getFirstField("©gen");
+			field.setContent(b.getGenre());
+			tag.setField(field);
+		}
+
+		audiofile.setTag(tag);
+		try
+		{
+			writer.write(audiofile);
+		} catch (CannotWriteException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	/*

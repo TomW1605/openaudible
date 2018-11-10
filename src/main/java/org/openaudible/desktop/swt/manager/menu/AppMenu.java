@@ -33,7 +33,7 @@ public class AppMenu implements ITranslatable, SelectionListener {
 	private final Command[] actionCommands = {Command.ViewInAudible, Command.Show_MP3, Command.Play, Command.Download,
 			Command.Convert, Command.Refresh_Book_Info, Command.Ignore_Book};
 	private final Command[] controlCommands = {Command.Connect, Command.Quick_Refresh, Command.Rescan_Library, Command.Download_All, Command.Convert_All,
-			Command.MenuSeparator, Command.Browser, Command.Logout}; // , Command.MenuSeparator, Command.Logout};
+			Command.MenuSeparator, Command.Browser, Command.Logout_and_Clear_Cookies}; // , Command.MenuSeparator, Command.Logout_and_Clear_Cookies};
 	
 	private final Command[] aboutCommands = {Command.Help, Command.AppWebPage, Command.Check_For_Update, Command.About};
 	
@@ -109,6 +109,7 @@ public class AppMenu implements ITranslatable, SelectionListener {
 		}
 		return null;
 	}
+	
 	
 	private MenuItem newMItem(Menu parent, Command cmd, int style) {
 		MenuItem item = installSystemMenu(cmd);
@@ -228,6 +229,8 @@ public class AppMenu implements ITranslatable, SelectionListener {
 		if (app.quitting)
 			return;
 		
+		MenuItem browser;
+		
 		for (MenuItem m : menuItems) {
 			if (m.isDisposed()) {
 				System.err.println(m + " menuitem disposed");
@@ -242,15 +245,19 @@ public class AppMenu implements ITranslatable, SelectionListener {
 				((IMenuCommand) t).update(m);
 			} else if (t instanceof Command) {
 				Command c = (Command) t;
-				m.setEnabled(CommandCenter.instance.getEnabled(c));
+				commandCenter.updateMenu(c, m);
 			}
+			
+			
 		}
 		
 		setEnabled(editMenu, Command.Copy, false);
 		setEnabled(editMenu, Command.Paste, false);
 		setEnabled(editMenu, Command.Cut, false);
 		
+		
 	}
+	
 	
 	private void initMnemonics() {
 		if (mbar != null)

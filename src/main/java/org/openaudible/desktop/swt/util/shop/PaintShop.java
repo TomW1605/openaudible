@@ -67,8 +67,8 @@ public class PaintShop {
 		if (i == null) {
 			try {
 				
-				Thread t = Thread.currentThread();
-				Class mainClass = t.getClass();
+				//Thread t = Thread.currentThread();
+				Class mainClass = PaintShop.class;
 				String fn = "/" + s;
 				
 				InputStream r = mainClass.getResourceAsStream(fn);

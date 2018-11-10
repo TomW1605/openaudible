@@ -81,9 +81,15 @@ public class FontShop {
 	 * @return boolean TRUE if the font is available
 	 */
 	public boolean isset(Font font) {
-		assert (font != null && !font.isDisposed());
+<<<<<<< HEAD
+//		assert (font != null && !font.isDisposed());
 		
 		return (font != null && !font.isDisposed());
+=======
+		if (font == null) return false;
+		assert (!font.isDisposed());
+		return !font.isDisposed();
+>>>>>>> origin/master
 	}
 	
 	public Font dialogFont() {

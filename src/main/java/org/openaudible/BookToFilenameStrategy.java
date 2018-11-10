@@ -16,7 +16,7 @@ public enum BookToFilenameStrategy {
 	int maxLen = 128;    // long file names are ok
 	
 	public String getFileName(Book b) {
-		return b.getProduct_id();
+		return b.getAsin();
 	}
 	
 	public String getReadableFileName(Book b) {

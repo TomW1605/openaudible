@@ -11,6 +11,14 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.CannotWriteException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.tag.mp4.Mp4Tag;
+import org.jaudiotagger.tag.mp4.field.Mp4TagTextField;
+import org.openaudible.Audible;
 import org.openaudible.Directories;
 import org.openaudible.books.Book;
 import org.openaudible.books.BookElement;
@@ -19,6 +27,8 @@ import org.openaudible.progress.IProgressTask;
 import org.openaudible.util.CopyWithProgress;
 import org.openaudible.util.Util;
 import org.openaudible.util.queues.IQueueJob;
+import org.jaudiotagger.audio.mp4.*;
+import org.jaudiotagger.tag.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,33 +57,36 @@ public class DownloadJob implements IQueueJob {
 	
 	
 	public void download() throws IOException {
-		String cust_id = b.get(BookElement.cust_id);
-		String user_id = b.get(BookElement.user_id);
-		
-		
-		String awtype = "AAX";
-		
+		if (!b.has(BookElement.shortTitle) || !b.has(BookElement.genre))
+		{
+			try
+			{
+				Audible.instance.updateInfo(b);
+			} catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
 		String codec = b.getCodec();
 		if (codec.isEmpty())
 			codec = "LC_64_22050_stereo";
 
-
         /*
-           http://cds.audible.com/download?
-                user_id=xxx[about 60 chars] &
-                product_id=BK_RAND_003188&
-                codec=LC_32_22050_Mono&
-                awtype=AAX&
-                cust_id= [ same as user-id currently? ]
-        */
+        https://cds.audible.com.au/download?
+        asin=B00FE5FDCQ&
+        cust_id=oUpFQWz5Lk0ZxIJkS-Hb1T-RSexXK6yCj2Sfs-PX3nKeLxpDMlkNNxHI7DpU&
+        codec=LC_64_22050_Stereo&
+		source=Audible&
+		type=AUDI
+         */
 		
-		String url = "http://cds.audible.com/download";
-		url += "?user_id=" + user_id;                   // crypt
-		url += "&product_id=" + b.getProduct_id();      // BK_ABCD_123456
-		url += "&codec=" + codec;       // LC_32_22050_Mono
-		url += "&awtype=" + awtype;     // AAX
-		url += "&cust_id=" + cust_id;
-		
+		String url = "http://cds.audible.com.au/download";
+		url += "?asin=" + b.getAsin();
+		url += "&cust_id=" + b.getCust_id();
+		url += "&codec=" + codec;
+		url += "&source=" + b.getSource();
+		url += "&type=" + b.getType();
+
 		LOG.info("Download book: " + b + " url=" + url);
 		
 		File tmp = null;
@@ -154,6 +167,31 @@ public class DownloadJob implements IQueueJob {
 				long time = System.currentTimeMillis() - start;
 				long bytes = destFile.length();
 				double bps = bytes / (time / 1000.0);
+
+				File aaxFile = new File(destFile.getPath());
+				Mp4FileWriter writer = new Mp4FileWriter();
+				Mp4FileReader reader = new Mp4FileReader();
+				try
+				{
+					Mp4TagTextField field;
+					AudioFile audiofile = reader.read(aaxFile);
+					Mp4Tag tag = (Mp4Tag)audiofile.getTag();
+
+					field = (Mp4TagTextField) tag.getFirstField("@sti");
+					field.setContent(b.getShortTitle());
+					tag.setField(field);
+
+					field = (Mp4TagTextField) tag.getFirstField("©gen");
+					field.setContent(b.getGenre());
+					tag.setField(field);
+
+					audiofile.setTag(tag);
+					writer.write(audiofile);
+				} catch (CannotReadException | TagException | InvalidAudioFrameException | ReadOnlyFileException | CannotWriteException e)
+				{
+					e.printStackTrace();
+				}
+
 				LOG.info("Downloaded " + destFile.getName() + " bytes=" + bytes + " time=" + time + " Kbps=" + (int) (bps / 1024.0));
 				
 			} else {
@@ -185,9 +223,7 @@ public class DownloadJob implements IQueueJob {
 				if (quit) {
 					throw new IOException("quit");
 				}
-				
 			}
-			
 		};
 		
 		return br;

@@ -39,19 +39,19 @@ public class WebPage {
 	
 	BookInfo toBookInfo(Book b) {
 		BookInfo i = new BookInfo();
-		i.title = b.get(BookElement.fullTitle);
-		i.author = b.get(BookElement.author);
-		i.narrated_by = b.get(BookElement.narratedBy);
-		i.summary = b.get(BookElement.summary);
+		i.title = b.getFullTitle();
+		i.author = b.getAuthor();
+		i.narrated_by = b.getNarratedBy();
+		i.summary = b.getSummary();
 		i.duration = b.getDurationHHMM();
-		i.rating_average = b.get(BookElement.rating_average);
-		i.rating_count = b.get(BookElement.rating_count);
-		i.publisher = b.get(BookElement.publisher);
+		i.rating_average = b.getRating_average();
+		i.rating_count = b.getRating_count();
+		i.publisher = b.getPublisher();
 		
 		i.link_url = b.getInfoLink();
 		i.author_url = b.getAuthorLink();
 		
-		i.description = b.get(BookElement.description);
+		i.description = b.getDescription();
 		i.purchase_date = b.getPurchaseDateSortable();
 		i.release_date = b.getReleaseDateSortable();
 		return i;

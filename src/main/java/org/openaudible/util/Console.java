@@ -67,7 +67,7 @@ public class Console extends ConsoleHandler {
 	 */
 	@Override
 	public void publish(LogRecord record) {
-		super.publish(record);
+		//super.publish(record);
 		
 		synchronized (history) {
 			history.add(record);

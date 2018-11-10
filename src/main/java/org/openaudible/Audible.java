@@ -42,7 +42,7 @@ public class Audible implements IQueueListener<Book> {
 	public static Audible instance; // Singleton
 	final String keysFileName = "keys.json";
 	private final HashMap<String, Book> books = new HashMap<>(); // Book.id(), Book
-	private final HashSet<String> ignoreSet = new HashSet<>();        // book ID's to ignore.
+	private final HashSet<String> ignoreSet = new HashSet<>();        // book key ID to ignore.
 	public DownloadQueue downloadQueue;
 	public ConvertQueue convertQueue;
 	public long totalDuration = 0;
@@ -61,9 +61,8 @@ public class Audible implements IQueueListener<Book> {
 	int booksUpdated = 0;
 	Exception last = null;
 	private AudibleAccountPrefs account = new AudibleAccountPrefs();
-	private AudibleScraper audibleScraper;
-	// AudibleRegion region = AudibleRegion.US;
-	private IProgressTask progress;
+	// private AudibleScraper audibleScraper;
+	// private IProgressTask progress;
 	private boolean autoConvertToMP3 = false;
 	
 	public Audible() {
@@ -133,7 +132,7 @@ public class Audible implements IQueueListener<Book> {
 		String link = b.getInfoLink();
 		if (link.startsWith("/")) {
 			// convert to full URL.
-			b.setInfoLink("https://www.audible.com" + link);
+			b.setInfoLink("https://www.audible.com.au" + link);
 		}
 		return b;
 	}
@@ -150,7 +149,7 @@ public class Audible implements IQueueListener<Book> {
 					normalizeBook(b);
 					
 					
-					books.put(b.getProduct_id(), b);
+					books.put(b.getAsin(), b);
 				}
 				BookNotifier.getInstance().bookAdded(b);
 				return true;
@@ -211,7 +210,7 @@ public class Audible implements IQueueListener<Book> {
 		String id = b.id();
 		if (id.length() == 0)
 			return true;
-		return ignoreSet.contains(b);
+		return ignoreSet.contains(id);
 	}
 	
 	public boolean ok(Book b) {
@@ -269,14 +268,15 @@ public class Audible implements IQueueListener<Book> {
 		Gson gson = new GsonBuilder().create();
 		HTMLUtil.writeFile(Directories.META.getDir(accountPrefsFileName), gson.toJson(account));
 		HTMLUtil.writeFile(Directories.META.getDir(bookFileName), gson.toJson(getBooks()));
-		if (audibleScraper != null) {
-			audibleScraper.saveCookies();
-		}
+//		if (audibleScraper != null) {
+//			audibleScraper.saveCookies();
+//		}
 	}
 	
 	public void update() throws Exception {
+		throw new Exception("depreciated");
+		/*
 		updateFileCache();
-		
 		updateLibrary(false);
 		updateInfo();
 		
@@ -295,6 +295,8 @@ public class Audible implements IQueueListener<Book> {
 		} else {
 			LOG.info(toConvert.size() + " book(s) are not converted to MP3. Type convert to start process.");
 		}
+		*/
+		
 	}
 	
 	public HashSet<File> getFileSet(Directories dir) {
@@ -322,6 +324,8 @@ public class Audible implements IQueueListener<Book> {
 		for (Book b : bookList) {
 			File aax = getAAXFileDest(b);
 			aaxs.remove(aax);
+			
+			
 		}
 		
 		if (aaxs.size() > 0) {
@@ -334,6 +338,7 @@ public class Audible implements IQueueListener<Book> {
 				try {
 					Book b = AAXParser.instance.parseAAX(f, Directories.getDir(Directories.ART), AAXParser.CoverImageAction.saveInDirectory);
 					takeBook(b);
+					
 					task.setSubTask(b.toString());
 					File imageDest = Audible.instance.getImageFileDest(b);
 					if (!imageDest.exists()) {
@@ -359,6 +364,11 @@ public class Audible implements IQueueListener<Book> {
 		for (Book b : bookList) {
 			File mp3 = getMP3FileDest(b);
 			mp3s.remove(mp3);
+			
+			
+			updatePurchaseDate(b);
+			
+			
 		}
 		
 		if (mp3s.size() > 0) {
@@ -388,6 +398,37 @@ public class Audible implements IQueueListener<Book> {
 		
 	}
 	
+	private void updatePurchaseDate(Book b) {
+		if (b.getFullTitle().contains("A Game of T")) {
+			System.currentTimeMillis();
+		}
+		String curDate = b.getPurchaseDate();
+		boolean needUpdate = curDate.isEmpty();
+		if (curDate.length() > 10) {
+			System.currentTimeMillis();
+			b.setPurchaseDate("");
+			needUpdate = true;
+		}
+		
+		if (needUpdate) {
+			File f = getAAXFileDest(b);
+			if (f.exists()) {
+				long lm = f.lastModified();
+				if (lm == 0) lm = System.currentTimeMillis();
+				
+				b.setPurchaseDate(new Date(lm));
+				
+				String check = b.getPurchaseDateSortable();
+				if (check.length() != 10) {
+					b.setPurchaseDate("");
+				}
+				
+			}
+		}
+		
+		
+	}
+	
 	public void updateFileCache() {
 		mp3Files = getFileSet(Directories.MP3);
 		aaxFiles = getFileSet(Directories.AAX);
@@ -409,10 +450,11 @@ public class Audible implements IQueueListener<Book> {
 	}
 	
 	
-	public int getDownloadCount() {		synchronized (lock) {
-		
-		return toDownload.size();
-	}
+	public int getDownloadCount() {
+		synchronized (lock) {
+			
+			return toDownload.size();
+		}
 	}
 	
 	public int getConvertCount() {
@@ -423,8 +465,10 @@ public class Audible implements IQueueListener<Book> {
 	}
 	
 	
-	public int mp3Count() {synchronized (lock){
-		return mp3Files.size();}
+	public int mp3Count() {
+		synchronized (lock) {
+			return mp3Files.size();
+		}
 		
 	}
 	
@@ -434,14 +478,15 @@ public class Audible implements IQueueListener<Book> {
 		}
 	}
 	
-	public void updateLibrary(boolean quick) throws Exception {
+	public void updateLibrary(final AudibleScraper s, boolean quick) throws Exception {
 		booksUpdated = 0;
-		AudibleScraper s = getScraper();
+		
 		Collection<Book> list = null;
 		if (quick)
 			list = s.fetchLibraryQuick(books);
 		else
 			list = s.fetchLibrary();
+		
 		for (Book b : list) {
 			takeBook(b);
 			HashSet<BookElement> changes = updateBook(b);
@@ -461,7 +506,7 @@ public class Audible implements IQueueListener<Book> {
 	private HashSet<BookElement> updateBook(Book updatedBook) {
 		Book book;
 		synchronized (books) {
-			book = books.get(updatedBook.getProduct_id());
+			book = books.get(updatedBook.getAsin());
 		}
 		
 		if (book != null) {
@@ -551,7 +596,7 @@ public class Audible implements IQueueListener<Book> {
 	}
 	
 	public File getMP3FileDest(Book b) {
-		return Directories.MP3.getDir(b.getProduct_id() + ".mp3");
+		return Directories.MP3.getDir(b.getAsin()+"_"+b.getShortTitle() + ".mp3");
 	}
 	
 	public boolean hasImage(Book b) {
@@ -559,11 +604,11 @@ public class Audible implements IQueueListener<Book> {
 	}
 	
 	public File getImageFileDest(Book b) {
-		if (b == null || b.getProduct_id() == null || b.getProduct_id().length() == 0) {
-			assert (false);
+		if (b == null || b.getAsin() == null || b.getAsin().length() == 0) {
+//			assert (false);
 			return null;
 		}
-		return Directories.ART.getDir(b.getProduct_id() + ".jpg");
+		return Directories.ART.getDir(b.getAsin()+"_"+b.getShortTitle() + ".jpg");
 	}
 	
 	public void export(Writer w, List<Book> bookList) throws IOException {
@@ -605,11 +650,11 @@ public class Audible implements IQueueListener<Book> {
 	
 	
 	public File getAAXFileDest(Book b) {
-		if (b.getProduct_id().length() == 0) {
+		if (b.getAsin().length() == 0) {
 			new IOException("Bad book").printStackTrace();
 			return null;
 		}
-		return Directories.AAX.getDir(b.getProduct_id() + ".AAX");
+		return Directories.AAX.getDir(b.getAsin()+"_"+b.getShortTitle() + ".AAX");
 	}
 	
 	public boolean canDownload(Book b) {
@@ -643,8 +688,8 @@ public class Audible implements IQueueListener<Book> {
 	}
 	
 	// refreshes book with latest from audible.com
-	public void updateInfo() throws Exception {
-		AudibleScraper s = getScraper();
+	public void updateInfo(AudibleScraper s) throws Exception {
+		
 		ArrayList<Book> list = new ArrayList<>();
 		
 		for (Book b : Audible.instance.getBooks()) {
@@ -662,56 +707,60 @@ public class Audible implements IQueueListener<Book> {
 	}
 	
 	
-	public void updateInfo(Book b) throws Exception {
-		getScraper().getInfo(b);
+	public void updateInfo(Book b, AudibleScraper s) throws Exception {
+		s.getInfo(b);
 	}
 	
 	
-	public AudibleScraper getScraper() throws Exception {
-		return getScraper(true);
-	}
-	
-	public AudibleScraper getScraper(boolean connect) throws Exception {
-		boolean ok = false;
-		
-		if (audibleScraper == null) {
+	/*
+		public AudibleScraper getScraper() throws Exception {
+			assert(false);
+			return getScraper(null);
+		}
+		public AudibleScraper getScraper(AudibleClient wc) throws Exception {
+			boolean ok = false;
+			assert(audibleScraper==null);
 			
-			// if (account == null || account.audibleUser.isEmpty())  throw new Exception("audible user name not set");
-//            if (account == null || account.audiblePassword.isEmpty())
-//                throw new Exception("audible password not set");
-			
-			
-			audibleScraper = new AudibleScraper(account);
-			
-			
-			if (getProgress() != null)
-				audibleScraper.setProgress(getProgress());
-			if (connect) {
-				try {
-					audibleScraper.connect();
-					ok = true;
-					
-				} finally {
-					if (!ok && audibleScraper != null) {
-						audibleScraper.quit();
-						audibleScraper = null;
+			if (audibleScraper == null) {
+				
+				// if (account == null || account.audibleUser.isEmpty())  throw new Exception("audible user name not set");
+	//            if (account == null || account.audiblePassword.isEmpty())
+	//                throw new Exception("audible password not set");
+				
+				
+				audibleScraper = new AudibleScraper(account, wc);
+				
+				
+				if (getProgress() != null)
+					audibleScraper.setProgress(getProgress());
+				if (false) {	// connect
+					try {
+						audibleScraper.connect();
+						ok = true;
+						
+					} finally {
+						if (!ok && audibleScraper != null) {
+							audibleScraper.quit();
+							audibleScraper = null;
+						}
 					}
 				}
-			}
-		} else {
+			} else {
+	*//*
 			if (connect) {
 				if (!audibleScraper.checkLoggedIn()) {
 					audibleScraper.home();
 				}
 			}
-			
+*//*
+		
 		}
 		
 		return audibleScraper;
 		
 	}
-	
-	public IProgressTask getProgress() {
+	*/
+	/*public IProgressTask getProgress() {
 		return progress;
 	}
 	
@@ -726,14 +775,16 @@ public class Audible implements IQueueListener<Book> {
 		}
 		this.progress = progress;
 		
+*//*
 		if (audibleScraper != null)
 			audibleScraper.setProgress(progress);
+*//*
 		
 		last = new Exception(progress != null ? "setting" : "clearing");
 		
 	}
 	
-	
+	*/
 	String inspectCookies(Collection<Cookie> col) {
 		String out = "";
 		out += "Size:" + col.size();
@@ -842,15 +893,17 @@ public class Audible implements IQueueListener<Book> {
 		return account;
 	}
 	
-	public void logout() {
-		
-		if (audibleScraper != null)
-			audibleScraper.logout();
-		AudibleScraper.deleteCookies();
-	}
 	
 	public String getAudibleURL() {
-		return getAccount().audibleRegion.getBaseURL();
+		return getRegion().getBaseURL();
+	}
+	
+	private AudibleRegion getRegion() {
+		return account.getRegion();
+	}
+	
+	public String getAudibleLibraryURL() {
+		return getAccount().audibleRegion.getBaseURL() + "/lib";
 	}
 	
 	// used for drag and drop into the app to convert any aax file.

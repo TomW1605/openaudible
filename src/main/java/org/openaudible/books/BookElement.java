@@ -3,7 +3,7 @@ package org.openaudible.books;
 // Audio Book Attributes.
 //
 public enum BookElement {
-	product_id, codec, asin, infoLink, fullTitle, author, narratedBy, summary, description, duration, format, rating_average, rating_count, release_date, purchase_date, publisher, genre, shortTitle, copyright, user_id, cust_id, order_number, author_link;
+	product_id, codec, asin, infoLink, fullTitle, author, narratedBy, summary, description, duration, format, rating_average, rating_count, release_date, purchase_date, publisher, genre, shortTitle, copyright, user_id, cust_id, order_number, author_link, type, source;
 	
 	public static BookElement findByName(String s) {
 		
@@ -52,7 +52,7 @@ public enum BookElement {
 				o = "Link";
 				break;
 			case fullTitle:
-				o = "Title";
+				o = "Title (full)";
 				break;
 			case author:
 				o = "Author";
@@ -91,7 +91,7 @@ public enum BookElement {
 				o = "Genre";
 				break;
 			case shortTitle:
-				o = "Title (short)";
+				o = "Title";
 				break;
 			case copyright:
 				o = "Copyright";
@@ -104,6 +104,12 @@ public enum BookElement {
 				break;
 			case order_number:
 				o = "Order #";
+				break;
+			case type:
+				o = "Type";
+				break;
+			case source:
+				o = "Source";
 				break;
 			
 			default:

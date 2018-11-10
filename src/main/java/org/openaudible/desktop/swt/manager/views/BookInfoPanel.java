@@ -35,16 +35,15 @@ public class BookInfoPanel extends GridComposite implements BookListener {
 	//    , BookElement.codec,  BookElement.genre, BookElement.asin, BookElement.infoLink, , BookElement.summary, BookElement.description,  BookElement.format, BookElement.rating_average, BookElement.rating_count, BookElement.genre, BookElement.shortTitle, BookElement.copyright, BookElement.user_id, BookElement.cust_id };
 	final Image cover = PaintShop.getImage("images/cover.png");
 	BookElement elems[] = {
+			BookElement.shortTitle,
 			BookElement.fullTitle,
+			BookElement.genre,
 			BookElement.author,
 			BookElement.narratedBy,
 			BookElement.duration,
-			BookElement.release_date,
 			BookElement.purchase_date,
+			BookElement.release_date,
 			BookElement.publisher,
-			BookElement.copyright,
-			BookElement.asin,
-			BookElement.product_id
 	};
 	//static final BookElement elems[] = { BookElement.fullTitle, BookElement.author, BookElement.release_date, BookElement.publisher, BookElement.asin, BookElement.product_id };
 	Label stats[] = new Label[BookElement.values().length];
@@ -211,12 +210,12 @@ public class BookInfoPanel extends GridComposite implements BookListener {
 					out = b.getInfoLink();
 					break;
 				case narratedBy:
-					prefix = "https://www.audible.com/search?searchNarrator=";
+					prefix = "https://www.audible.com.au/search?searchNarrator=";
 					suffix = b.getNarratedBy();
 					break;
 				
 				case publisher:
-					prefix = "https://www.audible.com/search?searchProvider=";
+					prefix = "https://www.audible.com.au/search?searchProvider=";
 					suffix = b.getPublisher();
 					break;
 				
@@ -351,7 +350,8 @@ public class BookInfoPanel extends GridComposite implements BookListener {
 	
 	@Override
 	public void bookUpdated(Book book) {
-		if (book.equals(curBook)) {
+		//if (book.equals(curBook))
+		{
 			refresh();
 		}
 	}
@@ -363,7 +363,8 @@ public class BookInfoPanel extends GridComposite implements BookListener {
 	
 	@Override
 	public void bookProgress(final Book book, final String msg) {
-		if (book.equals(curBook)) {
+		if (book.equals(curBook))
+		{
 			SWTAsync.run(new SWTAsync("bookProgress") {
 				@Override
 				public void task() {

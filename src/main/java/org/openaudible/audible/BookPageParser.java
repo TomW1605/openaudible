@@ -9,6 +9,8 @@ import org.json.JSONObject;
 import org.openaudible.books.Book;
 import org.openaudible.books.BookElement;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +45,7 @@ public enum BookPageParser {
 		DomNode h = page;
 		// HTMLUtil.debugNode(page, "book_info");
 		String xml = page.asXml();
+		//LOG.info(xml);
 		List<String> cdataList = getCDATATags(xml);
 		for (String cd : cdataList) {
 			if (cd.startsWith("[")) {
@@ -52,6 +55,7 @@ public enum BookPageParser {
 					JSONArray jsonArray = new JSONArray(cd);
 					for (int x = 0; x < jsonArray.length(); x++) {
 						JSONObject obj = jsonArray.getJSONObject(x);
+						//LOG.info(obj);
 						extractFromJSON(obj, b);
 					}
 				} catch (Throwable th) {
@@ -72,10 +76,12 @@ public enum BookPageParser {
 		String typ = obj.optString("@type");
 		if (typ == null || typ.isEmpty())
 			return;
-		if (!"AudioBook".equalsIgnoreCase(typ)) // && !"Product".equalsIgnoreCase(typ))
+		if (typ.equalsIgnoreCase("BreadcrumbList"))
+			extractFromList(obj, b);
+		if (!typ.equalsIgnoreCase("AudioBook")) // && !"Product".equalsIgnoreCase(typ))
 			return;
 		
-		// LOG.info(obj.toString(2));
+		//LOG.info(obj.toString(2));
 		
 		for (String k : obj.keySet()) {
 			Object value = obj.get(k);
@@ -85,6 +91,9 @@ public enum BookPageParser {
 			switch (k) {
 				case "description":
 					elem = BookElement.summary;     // our summary is the description
+					/*str = str.replaceAll("(?: ?<p> ?)(.+?)?(?: ?</p> ?)", "\n\n$1");
+					str = str.replaceAll("(?:<i> ?)(.+?)(?: ?</i>)", "\"$1\"");
+					str = str.replaceAll("^\\n+", "");*/
 					break;
 				case "sku":
 					// elem = BookElement.product_id;
@@ -102,7 +111,7 @@ public enum BookPageParser {
 					break;
 				case "datePublished":
 					elem = BookElement.release_date;
-					break;
+				break;
 				case "author":
 					str = personToString(obj.getJSONArray(k));
 					elem = BookElement.author;
@@ -122,13 +131,13 @@ public enum BookPageParser {
 						b.setRating_count(rcount);
 					break;
 				case "name":
-					elem = BookElement.fullTitle;
+					elem = BookElement.shortTitle;
 					break;
 				case "publisher":
 					elem = BookElement.publisher;
 					break;
 				default:
-					// LOG.info("Skipping "+k+" = "+ str);
+					//LOG.info("Skipping "+k+" = "+ str);
 					break;
 			}
 			
@@ -137,6 +146,35 @@ public enum BookPageParser {
 					LOG.info("set " + elem + " from " + b.get(elem) + " to " + str);
 					b.set(elem, str);
 				}
+			}
+		}
+	}
+
+	private void extractFromList(JSONObject obj, Book b) {
+		for (String k : obj.keySet()) {
+			Object array = obj.get(k);
+			if (array.getClass()==JSONArray.class) {
+				String genre = "", subGenre = "";
+				for (Object val : (JSONArray)array) {
+					if (val.getClass()==JSONObject.class) {
+						JSONObject list = (JSONObject)val;
+						int position = list.getInt("position");
+						String str = list.getJSONObject("item").getString("name");
+
+						switch (position) {
+							case 2:
+								genre = str;
+								break;
+							case 3:
+								subGenre = str;
+								break;
+							default:
+								break;
+						}
+					}
+				}
+				if (!genre.isEmpty() && !subGenre.isEmpty())
+					b.setGenre(genre+"->"+subGenre);
 			}
 		}
 	}

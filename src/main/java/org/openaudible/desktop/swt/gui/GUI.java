@@ -297,8 +297,8 @@ public abstract class GUI implements ITranslatable {
 		shell.setLayout(LayoutShop.createGridLayout(1, 3, 2, 3));
 		shell.setText(i18n.getTranslation("APP_NAME"));
 		/* On Mac do not set Shell Image since it will change the Dock Image */
-		if (isWindows())
-			shell.setImages(PaintShop.appIcon);
+//		if (isWindows())
+//			shell.setImages(PaintShop.appIcon);
 		/* Save favorites before quit */
 		shell.addDisposeListener(e -> onDispose());
 		/* Listen for close event to set isClosing flag */

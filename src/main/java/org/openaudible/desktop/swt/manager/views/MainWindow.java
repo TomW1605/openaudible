@@ -1,12 +1,18 @@
 package org.openaudible.desktop.swt.manager.views;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.TableColumn;
 
 public class MainWindow extends GridComposite {
+	private static final Log LOG = LogFactory.getLog(MainWindow.class);
 	final int gdFlags = GridData.VERTICAL_ALIGN_BEGINNING;
 	BookTable bookTable;
 	BookInfoPanel info;
@@ -64,7 +70,7 @@ public class MainWindow extends GridComposite {
 	void libraryStatus(GridComposite row) {
 		Composite statusGroup = row.newGroup("Library Status");
 		GridData gd = new GridData(gdFlags);
-		gd.widthHint = 170;
+		gd.widthHint = 250;
 		statusGroup.setLayoutData(gd);
 		status = new StatusPanel(statusGroup);
 	}

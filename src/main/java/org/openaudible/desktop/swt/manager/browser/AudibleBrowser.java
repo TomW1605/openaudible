@@ -1,8 +1,10 @@
-package org.openaudible.desktop.swt.manager.views;
+package org.openaudible.desktop.swt.manager.browser;
 
 import com.gargoylesoftware.htmlunit.util.Cookie;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jface.window.ApplicationWindow;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.browser.*;
@@ -15,19 +17,18 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.*;
 import org.openaudible.Directories;
 import org.openaudible.audible.AudibleClient;
-import org.openaudible.audible.ConnectionNotifier;
 import org.openaudible.desktop.swt.gui.MessageBoxFactory;
-import org.openaudible.desktop.swt.gui.SWTAsync;
 import org.openaudible.util.Platform;
 
 import java.io.File;
 import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
+
 
 public class AudibleBrowser {
 	public final static Log logger = LogFactory.getLog(AudibleBrowser.class);
+	final BrowserWebClient browserWebClient;
+	protected Browser browser;
 	int index;
 	boolean busy;
 	Image icon = null;
@@ -42,7 +43,7 @@ public class AudibleBrowser {
 	SWTError error = null;
 	Collection<Cookie> cookies;
 	String customHeader[];
-	private Browser browser;
+	
 	
 	public AudibleBrowser(Composite parent, String url) {
 		this.parent = parent;
@@ -56,19 +57,42 @@ public class AudibleBrowser {
 		
 		browser = new Browser(parent, style);
 		browser.addTitleListener(event -> getShell().setText(event.title));
-		Object t = browser.getWebBrowser();
+		
 		
 		customHeader = new String[1];
 		customHeader[0] = "User-agent: " + AudibleClient.swtWindows;
 		
 		initResources();
-		if (url.length() > 0)
-			setUrl(getResourceString(url));
+		
+		getShell().addListener(SWT.Close, event -> {
+			event.doit = false;
+			setVisible(false);
+		});
+		
+		
+		getShell().addListener(SWT.Dispose, new Listener() {
+			public void handleEvent(Event event) {
+				new Exception("browser shell disposed:").printStackTrace();
+				;
+				
+			}
+		});
+		
 		
 		if (true)
 			show(false, null, null, true, true, true, true);
 		else
 			show(false, null, null, false, false, false, false);
+		
+		locationBar.setText(url);
+		
+		browserWebClient = new BrowserWebClient(this);
+		
+		
+		if (url.length() > 0) {
+			setUrl(url);
+		}
+		
 		
 	}
 	
@@ -83,16 +107,52 @@ public class AudibleBrowser {
 		return key;
 	}
 	
-	public static AudibleBrowser newBrowserWindow(final Display display, String url) {
-		Shell shell = new Shell(display);
+	public static AudibleBrowser newBrowserWindow(String url, boolean visible) {
+		
+		class BrowserWindow extends Window {
+			public BrowserWindow(Shell parentShell) {
+				super(parentShell);
+			}
+			
+			protected void handleShellCloseEvent() {
+				System.out.println("handleClose...");
+				
+				// for example: setReturnCode(OK);
+				// Do whatever you want
+			}
+			
+		}
+		
+		final Shell shell;
+		if (false) {
+			//
+			BrowserWindow window = new BrowserWindow(null);
+			window.create();
+			
+			
+			shell = window.getShell();
+		} else
+		{
+			shell = new Shell(Display.getCurrent());
+			
+			
+		}
+		shell.setVisible(visible);
+		shell.setActive();
+		
+		// Shell shell = new Shell(display);
 		FillLayout layout = new FillLayout();
+		
+		System.out.println("style=" + shell.getStyle());
+		
 		
 		shell.setLayout(layout);
 		shell.setText(url);
 		shell.setSize(900, 800);
+		shell.setVisible(visible);
+		
 		try {
 			AudibleBrowser app = new AudibleBrowser(shell, url);
-			shell.open();
 			return app;
 		} catch (Throwable th) {
 			shell.dispose();
@@ -107,12 +167,14 @@ public class AudibleBrowser {
 			MessageBoxFactory.showError(null, "Error opening internal web browser", err);
 			return null;
 		}
+		
+		
 	}
 	
 	public static void main(String[] args) {
 		Display display = new Display();
 		
-		AudibleBrowser app = newBrowserWindow(display, "https://audible.com");
+		AudibleBrowser app = newBrowserWindow("https://audible.com", true);
 		
 		while (!app.getShell().isDisposed()) {
 			if (!display.readAndDispatch())
@@ -123,16 +185,20 @@ public class AudibleBrowser {
 		display.dispose();
 	}
 	
-	public static void showHelp(Display display) {
+	public static void showHelp() {
 		File dir = Directories.getHelpDirectory();
 		File index = new File(dir, "index.html");
 		if (index.exists()) {
 			URI uri = index.toURI();
 			String u = uri.toString();
-			newBrowserWindow(display, u);
+			newBrowserWindow(u, true);
 		} else {
 			MessageBoxFactory.showError(null, "Unable to open help. Expected at:" + index.getAbsolutePath());
 		}
+	}
+	
+	public BrowserWebClient getBrowserWebClient() {
+		return browserWebClient;
 	}
 	
 	// Silence Windows SWT.browser widget from making awful clicks.
@@ -262,7 +328,7 @@ public class AudibleBrowser {
 			data.right = new FormAttachment(100, -5);
 			data.bottom = new FormAttachment(100, -5);
 			progressBar.setLayoutData(data);
-			
+			/*
 			LocationListener ll = new LocationListener() {
 				@Override
 				public void changing(LocationEvent locationEvent) {
@@ -293,11 +359,13 @@ public class AudibleBrowser {
 			};
 			
 			browser.addLocationListener(ll);
+			*/
 			
 			browser.addStatusTextListener(event -> status.setText(event.text));
 		}
 		
 		/* Define the function to call from JavaScript */
+/*
 		new BrowserFunction(browser, "cookieCallback") {
 			@Override
 			public Object function(Object[] objects) {
@@ -334,8 +402,10 @@ public class AudibleBrowser {
 				return null;
 			}
 		};
+*/
 		
 		/* Define the function to call from JavaScript */
+		/*
 		new BrowserFunction(browser, "pageInfoCallback") {
 			@Override
 			public Object function(Object[] objects) {
@@ -344,6 +414,7 @@ public class AudibleBrowser {
 				return null;
 			}
 		};
+		*/
 		
 		parent.setLayout(new FormLayout());
 		
@@ -406,12 +477,14 @@ public class AudibleBrowser {
 			shell.open();
 	}
 	
-	private void test() {
-	
-	}
 	
 	public void setUrl(String u) {
-		browser.setUrl(u, null, customHeader);
+		try {
+			locationBar.setText(u);
+			browserWebClient.getPage(u);
+		} catch (Throwable th) {
+			logger.error(u, th);// browser.setUrl(u, null, customHeader);
+		}
 	}
 	
 	/**
@@ -432,7 +505,7 @@ public class AudibleBrowser {
 	void freeResources() {
 	
 	}
-	
+	/*
 	public Collection<Cookie> getCookies() {
 		cookies = null;
 		SWTAsync.block(new SWTAsync("getCookies") {
@@ -451,6 +524,7 @@ public class AudibleBrowser {
 		
 		return cookies;
 	}
+	*/
 	
 	/**
 	 * Loads the resources
@@ -458,7 +532,7 @@ public class AudibleBrowser {
 	void initResources() {
 	}
 	
-	private Shell getShell() {
+	public Shell getShell() {
 		return browser.getShell();
 	}
 	
@@ -469,5 +543,17 @@ public class AudibleBrowser {
 	public void close() {
 		if (!isDisposed()) browser.close();
 		browser = null;
+		browserWebClient.close();
+	}
+	
+	public boolean isVisible() {
+		return !isDisposed() && browser.isVisible();
+	}
+	
+	public void setVisible(boolean b) {
+		
+		if (!isDisposed()) {
+			browser.getShell().setVisible(b);
+		}
 	}
 }

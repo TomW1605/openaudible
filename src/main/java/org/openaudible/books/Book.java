@@ -266,7 +266,7 @@ public class Book implements Comparable<Book>, Serializable {
 	}
 
 	public void setRelease_date(String release_date) {
-		set(BookElement.release_date, release_date);
+		set(BookElement.release_date, reFormatDate(release_date, "yyyy-MM-dd"));
 	}
 
 	public String getPublisher() {
@@ -333,7 +333,7 @@ public class Book implements Comparable<Book>, Serializable {
 	}
 
 	public void setPurchaseDate(String purchaseDateText) {
-		set(BookElement.purchase_date, purchaseDateText);
+		set(BookElement.purchase_date, reFormatDate(purchaseDateText, "yyyy-MM-dd"));
 	}
 
 	public String getDurationHHMM() {
@@ -343,36 +343,12 @@ public class Book implements Comparable<Book>, Serializable {
 
 	public String getReleaseDateSortable() {
 		String date = getRelease_date();
-		if (!date.isEmpty()) {
-			// 11-MAR-2015
-			SimpleDateFormat parseFormat = new SimpleDateFormat("dd-MMM-yyyy");
-			try {
-				Date d = parseFormat.parse(date);
-				SimpleDateFormat dispalyFormat = new SimpleDateFormat("yyyy-MM-dd");
-				String out = dispalyFormat.format(d);
-				return out;
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
-		}
-
-		return date;
+		return reFormatDate(date, "yyyy-MM-dd");
 	}
-
 
 	public String getPurchaseDateSortable() {
 		String date = getPurchaseDate();
-		if (!date.isEmpty()) {
-			String dt[] = date.split("-");
-			if (dt.length == 3) {
-				return "20" + dt[2] + "-" + dt[0] + "-" + dt[1];    // yyyy-mm-dd for sorting and viewing
-				// warning, y3k bug
-			} else {
-
-			}
-		}
-
-		return date;
+		return reFormatDate(date, "yyyy-MM-dd");
 	}
 
 	public String getAuthorLink() {
@@ -381,5 +357,39 @@ public class Book implements Comparable<Book>, Serializable {
 
 	public void setAuthorLink(String s) {
 		set(BookElement.author_link, s);
+	}
+
+	public String reFormatDate(String date, String newFormat) {
+		String oldFormat = "";
+		if (date.matches("\\d{2}/\\d{2}/\\d{4}"))
+			oldFormat = "dd/MM/yyyy";
+		else if (date.matches("\\d/\\d{2}/\\d{4}"))
+			oldFormat = "d/MM/yyyy";
+		else if (date.matches("\\d{2}-\\d{2}-\\d{4}"))
+			oldFormat = "dd-MM-yyyy";
+		else if (date.matches("\\d-\\d{2}-\\d{4}"))
+			oldFormat = "d-MM-yyyy";
+		else if (date.matches("\\d{4}-\\d{2}-\\d{2}"))
+			oldFormat = "yyyy-MM-dd";
+		else if (date.matches("\\d{4}-\\d{2}-\\d"))
+			oldFormat = "yyyy-MM-d";
+		else if (date.matches("\\d{2}-[A-Z]{3}-\\d{4}"))
+			oldFormat = "dd-MMM-yyyy";
+		else if (date.matches("\\d-[A-Z]{3}-\\d{4}"))
+			oldFormat = "d-MMM-yyyy";
+
+		if (!date.isEmpty()) {
+			SimpleDateFormat parseFormat = new SimpleDateFormat(oldFormat, Locale.ENGLISH);
+
+			try {
+				Date d = parseFormat.parse(date);
+				SimpleDateFormat displayFormat = new SimpleDateFormat(newFormat, Locale.ENGLISH);
+				String out = displayFormat.format(d);
+				return out;
+			} catch (ParseException var8) {
+				var8.printStackTrace();
+			}
+		}
+		return date;
 	}
 }

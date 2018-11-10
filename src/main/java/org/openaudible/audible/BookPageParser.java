@@ -111,7 +111,7 @@ public enum BookPageParser {
 					break;
 				case "datePublished":
 					elem = BookElement.release_date;
-				break;
+					break;
 				case "author":
 					str = personToString(obj.getJSONArray(k));
 					elem = BookElement.author;

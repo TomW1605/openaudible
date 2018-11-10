@@ -21,7 +21,7 @@ public enum LibraryParser {
 	private static final Log LOG = LogFactory.getLog(LibraryParser.class);
 	boolean debug = false;
 	
-	public boolean howToListenFound = false;
+	boolean howToListenFound = false;
 	
 	
 	// Expected Columns:
@@ -59,7 +59,6 @@ public enum LibraryParser {
 				next = a;
 			}
 		}
-		
 		return next;
 	}
 	
@@ -122,7 +121,7 @@ public enum LibraryParser {
 	}
 	
 	
-	String debugString = "";
+	String debugString = "OR_ORIG";
 	
 	
 	private Book parseLibraryRow(HtmlPage p, HtmlTableRow r) {

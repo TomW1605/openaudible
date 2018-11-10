@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven 3.3.9
+Build-Jdk: 10.0.2
+Application-Name: OpenAudible
+Build-Date: 2018-11-09
+Built-By: OpenAudible Group
+Main-Class: org.openaudible.desktop.Application
+

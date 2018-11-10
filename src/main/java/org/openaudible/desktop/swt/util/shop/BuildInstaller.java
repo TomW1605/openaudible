@@ -125,7 +125,6 @@ public class BuildInstaller {
 		json.put("platforms", platforms);
 		
 		json.put("download_dir", downloadDir);
-		json.put("old_news", Version.news);
 		json.put("pre_release_news", "");   // normally blank
 		json.put("current_news", "");        // normally blank
 		System.err.println(evt.toString());

@@ -2,6 +2,7 @@ package org.openaudible.audible;
 
 import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.*;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 import com.google.gson.Gson;
@@ -10,6 +11,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.impl.cookie.BasicClientCookie;
+import org.openaudible.Audible;
 import org.openaudible.AudibleAccountPrefs;
 import org.openaudible.Directories;
 import org.openaudible.books.Book;
@@ -24,36 +26,27 @@ import java.net.URL;
 import java.util.*;
 
 // audible.com web page scraper
-// a singleton class..
+// Not thread safe, run single instance at a time.
 public class AudibleScraper {
 	final static String cookiesFileName = "cookies.json";
 	private static final Log LOG = LogFactory.getLog(AudibleScraper.class);
-	
+	static int maxLoginAttempts = 2;
 	final AudibleAccountPrefs account;
 	private final AudibleClient webClient;
-	private final IProgressTask progress;
+	public HtmlPage page;
+	boolean debugCust = false;
 	boolean loggedIn = false;
-	private HtmlPage page;
+	String clickToDownload = "Click to download ";
+	private IProgressTask progress;
 	
 	
-	public AudibleScraper(AudibleAccountPrefs account, AudibleClient ac, IProgressTask progress) {
-		webClient = ac != null ? ac : new AudibleClient();
+	public AudibleScraper(AudibleAccountPrefs account) {
+		webClient = new AudibleClient();
 		this.account = account;
-		this.progress = progress;
-		if (ac == null) {
+		try {
 			loadCookies();
-			LOG.warn("AudibleScraper is null");
-		} else {
-			
-			if (ac.getLastPage() != null) {
-				setPage(ac.getLastPage());
-				try {
-					checkLoggedIn();
-				} catch (AudibleLoginError audibleLoginError) {
-					audibleLoginError.printStackTrace();
-				}
-			}
-			
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -97,47 +90,38 @@ public class AudibleScraper {
 			} else {
 				if (page != null) {
 					String u = page.getUrl().toString();
+					ConnectionNotifier.getInstance().loginFailed(u, page.asXml());
 				}
 				
 			}
 		}
 	}
 	
-	private void loadCookies() {
+	private void loadCookies() throws IOException {
 		
-		try {
-			CookieManager cm = getWebClient().getCookieManager();
-			
-			File cookiesFile = Directories.META.getDir(cookiesFileName);
-			if (cookiesFile.exists()) {
-				String content = HTMLUtil.readFile(cookiesFile);
-				
-				List<BasicClientCookie> list = new Gson().fromJson(content, new TypeToken<List<BasicClientCookie>>() {
-				}.getType());
-				
-				for (BasicClientCookie bc : list) {
-					Cookie c = new Cookie(bc.getDomain(), bc.getName(), bc.getValue());
-					cm.addCookie(c);
-					// LOG.info("Cookie: "+c);
-					
-				}
-				LOG.info("Loaded " + list.size() + " cookies");
+		CookieManager cm = getWebClient().getCookieManager();
+
+		File cookiesFile = Directories.META.getDir(cookiesFileName);
+		if (cookiesFile.exists()) {
+			String content = HTMLUtil.readFile(cookiesFile);
+
+			List<BasicClientCookie> list = new Gson().fromJson(content, new TypeToken<List<BasicClientCookie>>() {
+			}.getType());
+
+			for (BasicClientCookie bc : list) {
+				Cookie c = new Cookie(bc.getDomain(), bc.getName(), bc.getValue());
+				cm.addCookie(c);
+				// LOG.info("Cookie: "+c);
+
 			}
-		} catch (Throwable th) {
-			LOG.error("error loading cookies...", th);
+			LOG.info("Loaded " + list.size() + " cookies");
 		}
 	}
-	
-	public void signOut() throws FailingHttpStatusCodeException, IOException {
-		
-		getProgress().setTask("Signing out");
-		setURL("/signout");
-	}
-	
-	/*
+
 	public void logout() {
 		
-		
+		ConnectionNotifier.getInstance().signout();
+
 		try {
 			setURL("/signout", "Signing out");
 		} catch (Throwable th) {
@@ -150,11 +134,10 @@ public class AudibleScraper {
 		if (cookiesFile.exists()) {
 			cookiesFile.delete();
 		}
-		ConnectionNotifier.getInstance().signout();
 		
 		
 	}
-	*/
+
 	public void saveCookies() throws IOException {
 		
 		CookieManager cm = getWebClient().getCookieManager();
@@ -176,10 +159,12 @@ public class AudibleScraper {
 		String o = new Gson().toJson(list);
 		FileUtils.writeByteArrayToFile(cookiesFile, o.getBytes());
 	}
-	/*
-	protected boolean login() throws IOException, AudibleLoginError {
-		
-		webClient.throwIfNetworkDisabled();
+
+	protected boolean login() throws IOException {
+		return login(0);
+	}
+
+	protected boolean login(int attempt) throws IOException {
 		
 		AudibleAccountPrefs copy = account;
 		
@@ -198,14 +183,7 @@ public class AudibleScraper {
 		if (getProgress() != null)
 			getProgress().setTask("Logging on to audible...");
 		
-		HtmlForm login;
-		
-		try {
-			login = page.getFormByName("signIn");
-		} catch (Throwable th) {
-			HTMLUtil.debugNode(page, "login");
-			return false;
-		}
+		HtmlForm login = page.getFormByName("signIn");
 		
 		if (login == null) {
 			// TODO: find sign-in anchor and click it..
@@ -251,7 +229,8 @@ public class AudibleScraper {
 		pass.setValueAttribute(copy.audiblePassword);
 		email.setValueAttribute(copy.audibleUser);
 		
-		getProgress().setTask("Submitting credentials...");
+		if (getProgress() != null)
+			getProgress().setTask("Submitting credentials...");
 		HTMLUtil.debugNode(page, "submitting-credentials");
 		
 		setPage(submit.click());
@@ -259,12 +238,12 @@ public class AudibleScraper {
 		
 		if (!ok) {
 			HTMLUtil.debugNode(page, "login failed");
-			
+			LOG.info(page.getUrl());
 			
 			LOG.info("Login failed, see html files at:" + HTMLUtil.debugFile("submitting-credentials").getAbsolutePath() + " and " + HTMLUtil.debugFile("login failed").getAbsolutePath());
-			
-			ConnectionNotifier.getInstance().loginFailed(page.getUrl().toString(), page.getTitleText(), page.asXml());
-			
+			if (attempt < maxLoginAttempts) {
+				login(attempt + 1);
+			}
 			
 		} else {
 			HTMLUtil.debugFile("submitting-credentials").delete();
@@ -272,12 +251,11 @@ public class AudibleScraper {
 		
 		return ok;
 	}
-	*/
 	
 	// Returns true if logged in, false if not logged into audible.
-	public void checkLoggedIn() throws AudibleLoginError {
+	public boolean checkLoggedIn() {
 		if (page == null)
-			throw new AudibleLoginError("No page loaded");
+			return false;
 		
 		
 		Node signIn = HTMLUtil.findByName("signIn", page);
@@ -285,7 +263,7 @@ public class AudibleScraper {
 		
 		if (signIn != null || sI != null) {
 			setLoggedIn(false);
-			throw new AudibleLoginError("signIn form found");
+			return false;
 		}
 		
 		
@@ -295,17 +273,16 @@ public class AudibleScraper {
 		
 		if (accountDetails != null || signOut != null) {
 			assert (signIn == null);
+
 			setLoggedIn(true);
-			return;
+			return true;
 		}
 		
 		
 		if (signOut == null && accountDetails == null && signIn == null) {
 			HTMLUtil.debugNode(page, "checkLoggedIn");
 		}
-		if (!isLoggedIn()) {
-			throw new AudibleLoginError("not logged in");
-		}
+		return isLoggedIn();
 	}
 	
 	public String homeURL() {
@@ -323,9 +300,9 @@ public class AudibleScraper {
 	}
 	
 	public void home() throws FailingHttpStatusCodeException, IOException, AudibleLoginError, InterruptedException {
-		setURL(homeURL());
-/*
+
 //        if (checkLoggedIn()) {
+//            setURL(homeURL());
 //            return;
 //        }
 		
@@ -337,10 +314,7 @@ public class AudibleScraper {
 			
 			if (checkLoggedIn())
 				return;
-			
-			webClient.throwIfNetworkDisabled();
-			
-			
+
 			HtmlAnchor signIn = getAnchor("/sign-in");
 			if (signIn != null) {
 				setPage(signIn.click());
@@ -358,9 +332,8 @@ public class AudibleScraper {
 		
 		if (!checkLoggedIn())
 			throw new AudibleLoginError();
-		*/
+
 	}
-	
 	
 	public void connect() throws Exception {
 		home();
@@ -369,7 +342,12 @@ public class AudibleScraper {
 		}
 	}
 	
-	
+	public void signOut() throws FailingHttpStatusCodeException, IOException {
+		if (getProgress() != null)
+			getProgress().setTask("Signing out");
+		setURL("/signout");
+	}
+
 	private HtmlAnchor getAnchor(String string) {
 		for (HtmlAnchor n : page.getAnchors()) {
 			if (n.getHrefAttribute().contains(string))
@@ -377,16 +355,11 @@ public class AudibleScraper {
 		}
 		return null;
 	}
-	/*
-	private boolean setURLAndLogIn(String u) throws IOException, AudibleLoginError {
+
+	public boolean setURLAndLogIn(String u) throws IOException {
 		
 		setURL(u);
 		if (!checkLoggedIn()) {
-			
-			String url = page.getUrl().toString();
-			String title = page.getTitleText();
-			
-			
 			LOG.info("not logged in after going to:" + u);
 			// trouble.. try again
 			login();
@@ -394,33 +367,24 @@ public class AudibleScraper {
 		}
 		return true;
 	}
-	*/
 	
 	public void lib() throws Exception {
-
-/*
 		String browserURL = ConnectionNotifier.instance.getLastURL();
+
 		if (browserURL.startsWith(getAudibleBase())) {
 			// a bit of a hack.. try to log in using library URL in browser.
 			LOG.info("Using library location from browser: " + browserURL);
 			try {
 				if (setURLAndLogIn(browserURL))
 					return;
-			} catch (Throwable e) {
-
+			} catch (IOException e) {
 				LOG.error(e);
 			}
 		}
-*/
-		HtmlPage p = getPage();
-		if (p != null) {
-			String u = p.getUrl().toString();
-			if (u.endsWith("/lib") && isLoggedIn())
-				return;
-		}
-		setURL("/lib");
-		checkLoggedIn();
 		
+		if (!setURLAndLogIn("/lib"))
+			throw new Exception("Unable to access your library. Try logging in with Browser (Cmd-B) to view your library page and try again..  \n\nThere may also be a change in audible's web site that has broken this code.");
+
 /*
         HtmlAnchor lib=null;
         if (page!=null)
@@ -485,17 +449,15 @@ public class AudibleScraper {
 		return account.audibleRegion.getBaseURL();
 	}
 	
-	public HtmlPage setURL(String u) throws FailingHttpStatusCodeException, IOException {
+	public Page setURL(String u) throws FailingHttpStatusCodeException, IOException {
 		return setURL(u, "");
 	}
 	
-	public HtmlPage setURL(String u, String task) throws FailingHttpStatusCodeException, IOException {
+	public Page setURL(String u, String task) throws FailingHttpStatusCodeException, IOException {
 		return setURL(u, "", true);
 	}
 	
-	public HtmlPage setURL(String u, String task, boolean appendURL) throws FailingHttpStatusCodeException, IOException {
-		if (u.equals(""))
-			return null;
+	public Page setURL(String u, String task, boolean appendURL) throws FailingHttpStatusCodeException, IOException {
 		
 		if (u.startsWith("/"))
 			u = getAudibleBase() + u;
@@ -551,15 +513,13 @@ public class AudibleScraper {
 		while (true) {
 			progress.throwCanceled();
 			
-			checkLoggedIn();    // throws error if not logged in.
-			/*
-			{
+			if (!checkLoggedIn()) {
 				login();
 				if (!checkLoggedIn()) {
 					throw new Exception("Unable to remain logged in");
 				}
 			}
-			*/
+
 			
 			pageNum++;
 			
@@ -635,9 +595,6 @@ public class AudibleScraper {
 			next = LibraryParser.instance.getNextPage(page);
 			if (next == null)
 				break;
-			
-			webClient.stop();
-			
 			//LOG.info("next page:"+next);
 		}
 		
@@ -657,10 +614,10 @@ public class AudibleScraper {
 					if (url != null && !url.isEmpty()) {
 						//LOG.info("url: "+ url);
 						String newURL = url + "&purchaseDateFilter=all&programFilter=all&sortBy=PURCHASE_DATE.dsc";
-						page = setURL(newURL, "Setting view filter");
+						page = (HtmlPage) setURL(newURL, "Setting view filter");
 						LOG.info("new URL: " + page.getUrl());
 					}
-					h = page.getElementByName("purchaseDateFilter");
+					h = (HtmlSelect) page.getElementByName("purchaseDateFilter");
 					i = h.getSelectedIndex();
 					if (i != 0) {
 						LOG.error("Expected filter to be set to 0, not " + i);
@@ -707,27 +664,25 @@ public class AudibleScraper {
 		return true;
 	}
 	
-	public void getInfo(Book b) throws Exception {
+	public boolean getInfo(Book b) throws Exception {
 		
 		String link = b.getInfoLink();
 		
-		boolean updateLink = false;
-		if (link.length() == 0) {
-			LOG.info("no product link for " + b + ". Guessing generic pd link");
-			link = "/pd/" + b.getProduct_id();
-			updateLink = true;
-		}
-		HtmlPage p = setURL(link);
+		if (link.length() == 0)
+			throw new Exception("Product link page unavailable. Book may be discontinued or a library scan is needed.");
+		setURL(link);
 		URL u = page.getUrl();
 		String path = u.getPath();
 		if ("/pderror".equals(path)) {
-			throw new Exception("Product link page unavailable. Book may be discontinued or a library scan is needed. " + b);
+			b.setInfoLink(""); // clear link... it is no longer available.
+			return false;
 		}
 		
-		getProgress().setTask("Parsing book " + b);
+		if (getProgress() != null)
+			getProgress().setTask("Parsing book " + b);
+
 		BookPageParser.instance.parseBookPage(page, b);
-		if (updateLink)
-			b.setInfoLink(link);
+		return true;
 	}
 	
 	
@@ -735,7 +690,18 @@ public class AudibleScraper {
 		return progress;
 	}
 	
-	
+	public void setProgress(IProgressTask progress) {
+		this.progress = progress;
+	}
+
+	public boolean loggedIn() {
+		if (page != null) {
+			loggedIn = checkLoggedIn();
+		}
+
+		return loggedIn;
+	}
+
 	public AudibleClient getWebClient() {
 		return webClient;
 	}

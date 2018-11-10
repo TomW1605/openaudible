@@ -7,9 +7,7 @@ import org.openaudible.desktop.swt.manager.Version;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
-public abstract class SWTAsync implements Runnable, GUITask {
-	
-	
+public abstract class SWTAsync implements Runnable {
 	final static long kMinReportTime = 3000;
 	final static long kMinCaptureTime = 2000;
 	static final int timeInts[] = {50, 500, 5000, 10000, 20000};
@@ -29,10 +27,7 @@ public abstract class SWTAsync implements Runnable, GUITask {
 	static long interval_start = System.currentTimeMillis();
 	final static long interval_max = 5000;
 	final static long interval_warning = 50;        // 50 calls in 5 seconds is too often.
-	
-	public SWTAsync() {
-		this("task");
-	}
+
 	
 	public SWTAsync(String task) {
 		this.taskName = task;
@@ -162,18 +157,7 @@ public abstract class SWTAsync implements Runnable, GUITask {
 			}
 		});
 	}
-	
-	public static void block2(final GUITask t) {
-		SWTAsync s = new SWTAsync("block2") {
-			@Override
-			public void task() {
-				t.task();
-			}
-		};
-		block(s);
-	}
-	
-	
+
 	public abstract void task();
 	
 	public void run() {

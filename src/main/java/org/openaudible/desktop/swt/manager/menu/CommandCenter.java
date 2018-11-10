@@ -12,13 +12,12 @@ import org.openaudible.Audible;
 import org.openaudible.audible.ConnectionNotifier;
 import org.openaudible.desktop.swt.gui.GUI;
 import org.openaudible.desktop.swt.gui.MessageBoxFactory;
-import org.openaudible.desktop.swt.gui.progress.ProgressTask;
 import org.openaudible.desktop.swt.manager.Application;
 import org.openaudible.desktop.swt.manager.AudibleGUI;
 import org.openaudible.desktop.swt.manager.Version;
 import org.openaudible.desktop.swt.manager.VersionCheck;
-import org.openaudible.desktop.swt.manager.browser.AudibleBrowser;
 import org.openaudible.desktop.swt.manager.views.AboutDialog;
+import org.openaudible.desktop.swt.manager.views.AudibleBrowser;
 import org.openaudible.desktop.swt.manager.views.LogWindow;
 import org.openaudible.desktop.swt.manager.views.Preferences;
 import org.openaudible.desktop.swt.util.shop.WidgetShop;
@@ -32,21 +31,18 @@ import org.openaudible.desktop.swt.util.shop.WidgetShop;
 public class CommandCenter {
 	public final static Log logger = LogFactory.getLog(CommandCenter.class);
 	public static CommandCenter instance;
-	final AudibleGUI gui = AudibleGUI.instance;
 	public boolean expiredApp = false;
 	boolean confirmQuit = true;
 	boolean confirmSave = true;
 	private Clipboard cb;
 	private Application app;
 	private Shell shell;
-	ConnectionNotifier connection = ConnectionNotifier.instance;
 	
 	public CommandCenter(Display display, Shell shell, Application a) {
 		this.shell = shell;
 		this.app = a;
 		instance = this;
 		cb = new Clipboard(display);
-		assert (gui != null);
 	}
 	
 	public void userError(String s) {
@@ -182,6 +178,7 @@ public class CommandCenter {
 	public void execute(Command c) {
 		CommandCenter e = this;
 		logger.info("Command: " + c);
+
 		switch (c) {
 			case About:
 				e.showAbout();
@@ -190,7 +187,7 @@ public class CommandCenter {
 				Preferences.show(null);
 				break;
 			case Help:
-				AudibleBrowser.showHelp();
+				AudibleBrowser.showHelp(GUI.display);
 				break;
 			
 			case Quit:
@@ -201,86 +198,74 @@ public class CommandCenter {
 			case Paste:
 				break;
 			case Convert:
-				gui.convertSelected();
+				AudibleGUI.instance.convertSelected();
 				break;
 			case Rescan_Library:
-				gui.refreshLibrary(false);
+				AudibleGUI.instance.refreshLibrary(false);
 				break;
 			case Quick_Refresh:
-				gui.refreshLibrary(true);
+				AudibleGUI.instance.refreshLibrary(true);
 				break;
 			case Download:
-				gui.downloadSelected();
+				AudibleGUI.instance.downloadSelected();
 				break;
 			case ViewInAudible:
-				gui.viewInAudible();
+				AudibleGUI.instance.viewInAudible();
 				break;
 			case Show_MP3:
-				gui.explore();
+				AudibleGUI.instance.explore();
 				break;
 			case Show_AAX:
 				break;
 			case Play:
-				gui.play();
+				AudibleGUI.instance.play();
 				break;
 			case Export_Book_List:
-				gui.exportBookList();
+				AudibleGUI.instance.exportBookList();
 				break;
 			case Import_AAX_Files:
-				gui.importAAXFiles();
+				AudibleGUI.instance.importAAXFiles();
 				break;
 			case Check_For_Update:
 				VersionCheck.instance.checkForUpdate(shell, true);
 				break;
 			case Export_Web_Page:
-				gui.exportWebPage(true);
+				AudibleGUI.instance.exportWebPage(true);
 				break;
 			case Refresh_Book_Info:
-				gui.refreshBookInfo();
+				AudibleGUI.instance.refreshBookInfo();
 				break;
 			case AppWebPage:
-				gui.browse(Version.appLink);
+				AudibleGUI.instance.browse(Version.appLink);
 				break;
 			case ParseAAX:
-				gui.parseAAX();
+				AudibleGUI.instance.parseAAX();
 				break;
 			case Browser:
-				gui.toggleBrowser();
+				AudibleGUI.instance.browse();
 				break;
 			case Connect:
-				gui.connect();
+				AudibleGUI.instance.connect();
 				break;
 			case Download_All:
-				gui.downloadAll();
+				AudibleGUI.instance.downloadAll();
 				break;
 			case Convert_All:
-				gui.convertAll();
+				AudibleGUI.instance.convertAll();
 				break;
 			case Test1:
-				gui.test1();
+				AudibleGUI.instance.test1();
 				break;
 			case Console:
 				LogWindow.show();
 				break;
-			case Logout_and_Clear_Cookies:
-				gui.logout();
+			case Logout:
+				AudibleGUI.instance.logout();
 				break;
 			case Ignore_Book:
-				gui.ignoreSelected();
+				AudibleGUI.instance.ignoreSelected();
 				break;
-			
-/*
-			case Show_Browser:
-				gui.setBrowserVisible(true);
-				break;
-			case Hide_Browser:
-				gui.setBrowserVisible(false);
-				break;
-			case Scrap_Page:
-				break;
-*/
-			case MenuSeparator:
-				break;
+
 			default:
 				logger.info("Unknown cmd: " + c);
 		}
@@ -308,30 +293,30 @@ public class CommandCenter {
 			return c == Command.Quit || c == Command.Check_For_Update || c == Command.About;
 		switch (c) {
 			case Convert:
-				return gui.canConvert();
+				return AudibleGUI.instance.canConvert();
 			case Download:
-				return gui.canDownload();
+				return AudibleGUI.instance.canDownload();
 			case Show_AAX:
 				break;
 			case Play:
-				return gui.canPlay();
+				return AudibleGUI.instance.canPlay();
 			case Console:
 				return true;
 			
 			case Export_Web_Page:
 				return Audible.instance.mp3Count() > 0;
 			case Export_Book_List:
-				return gui.bookCount() > 0;
+				return AudibleGUI.instance.bookCount() > 0;
 			case ViewInAudible:
-				return gui.canViewInAudible();
+				return AudibleGUI.instance.canViewInAudible();
 			case Show_MP3:
-				return gui.canViewInSystem();
+				return AudibleGUI.instance.canViewInSystem();
 			case Download_All:
-				return gui.canDownloadAll();
+				return AudibleGUI.instance.canDownloadAll();
 			case Convert_All:
-				return gui.canConvertAll();
-			case Logout_and_Clear_Cookies:
-				return true;    // connection.isConnected();
+				return AudibleGUI.instance.canConvertAll();
+			case Logout:
+				return ConnectionNotifier.getInstance().isConnected();
 			case Preferences:
 			case Quit:
 			case About:
@@ -346,14 +331,14 @@ public class CommandCenter {
 				return false;
 			case Ignore_Book:
 			case Refresh_Book_Info:
-				return gui.getSelected().size() > 0;
+				return AudibleGUI.instance.getSelected().size() > 0;
 			case Rescan_Library:
 			case Quick_Refresh:
-				return connection.isConnected();
+				return AudibleGUI.instance.hasLogin();
 			case Connect:
-				return !connection.isConnected();
+				return !ConnectionNotifier.getInstance().isConnected();
 			case ParseAAX:
-				return gui.selectedAAXCount() > 0;
+				return AudibleGUI.instance.selectedAAXCount() > 0;
 			case Check_For_Update:
 			case Help:
 				return true;
@@ -366,30 +351,5 @@ public class CommandCenter {
 		}
 		return false;
 	}
-	
-	public void updateMenu(Command c, MenuItem m) {
-		
-		m.setEnabled(getEnabled(c));
-		switch (c) {
-			case Browser:
-				String name;
-				
-				if (!gui.isBrowserVisible())
-					name = "Show Web Browser";
-				else
-					name = "Hide Web Browser";
-				
-				char key = c.getKeyEquiv();
-				
-				if (key != 0 && !Application.isMac()) {
-					name += " \tCtrl+" + key;
-				}
-				
-				
-				m.setText(name);
-				break;
-			
-		}
-		
-	}
+
 }

@@ -44,6 +44,7 @@ public class BookInfoPanel extends GridComposite implements BookListener {
 			BookElement.purchase_date,
 			BookElement.release_date,
 			BookElement.publisher,
+			BookElement.asin,
 	};
 	//static final BookElement elems[] = { BookElement.fullTitle, BookElement.author, BookElement.release_date, BookElement.publisher, BookElement.asin, BookElement.product_id };
 	Label stats[] = new Label[BookElement.values().length];
@@ -80,6 +81,7 @@ public class BookInfoPanel extends GridComposite implements BookListener {
 		out = out.replace("&apos;", "\u0027");
 		out = out.replace("&lt;", "<");
 		out = out.replace("&gt;", ">");
+		out = out.replace("&", "&&");
 		return out;
 	}
 	

@@ -63,7 +63,6 @@ public class Application extends GUI {
 		} catch (Throwable th) {
 			logger.error("error", th);
 		}
-
 		if (GUI.isWindows())
 			shell.setImages(PaintShop.appIcon);
 		

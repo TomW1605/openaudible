@@ -1,6 +1,6 @@
 package org.openaudible.desktop.swt.manager;
 
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.util.Cookie;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.logging.Log;
@@ -24,12 +24,10 @@ import org.openaudible.desktop.swt.gui.MessageBoxFactory;
 import org.openaudible.desktop.swt.gui.SWTAsync;
 import org.openaudible.desktop.swt.gui.progress.ProgressDialog;
 import org.openaudible.desktop.swt.gui.progress.ProgressTask;
-import org.openaudible.desktop.swt.manager.browser.AudibleBrowser;
+import org.openaudible.desktop.swt.manager.views.AudibleBrowser;
 import org.openaudible.desktop.swt.manager.views.PasswordDialog;
 import org.openaudible.desktop.swt.manager.views.StatusPanel;
 import org.openaudible.feeds.pagebuilder.WebPage;
-import org.openaudible.progress.IProgressTask;
-import org.openaudible.progress.NullProgressTask;
 import org.openaudible.util.HTMLUtil;
 import org.openaudible.util.queues.IQueueJob;
 import org.openaudible.util.queues.IQueueListener;
@@ -54,8 +52,8 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 	BookNotifier bookNotifier = BookNotifier.getInstance();
 	boolean loggedIn = false;
 	String textFilter = "";
+	AudibleBrowser browser = null;
 	AudibleAccountPrefs userPass = null;
-	private AudibleBrowser browser = null;
 	
 	public AudibleGUI() {
 		assert (instance == null);
@@ -113,8 +111,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 	public void connectionChanged(boolean connected) {
 	
 	}
-	
-	
+
 	@Override
 	public AudibleAccountPrefs getAccountPrefs(AudibleAccountPrefs in) {
 		if (in.audiblePassword.isEmpty() || in.audibleUser.isEmpty()) {
@@ -141,7 +138,77 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		}
 		return in;
 	}
-	
+
+
+/*
+    public void fetchDecryptionKeyOld() {
+        try {
+            if (!audible.getAccount().audibleKey.isEmpty())
+                throw new Exception("Audible key already set.");
+
+            String key = audible.getScraper(true).fetchDecrpytionKey();
+            audible.getAccount().audibleKey = key;
+            audible.save();
+        } catch (Throwable th) {
+            LOG.info("Error getting key.", th);
+            MessageBoxFactory.showError(null, "Unable to get Key\nError:" + th);
+        }
+    }
+    public void fetchDecryptionKey() {
+        try {
+            File aax = null;
+            for (Book b:getSelected())
+            {
+
+            }
+
+            if (!audible.getAccount().audibleKey.isEmpty())
+                throw new Exception("Audible key already set.");
+
+            String key = audible.getScraper(true).fetchDecrpytionKey();
+            audible.getAccount().audibleKey = key;
+            audible.save();
+        } catch (Throwable th) {
+            LOG.info("Error getting key.", th);
+            MessageBoxFactory.showError(null, "Unable to get Key\nError:" + th);
+        }
+    }
+
+
+    public String lookupKey(final File aaxFile) {
+
+        class LookupTask extends ProgressTask {
+            LookupTask() {
+                super("Look up encrpytion key...");
+
+            }
+
+            String result = null;
+            String err = null;
+
+            public void run() {
+                try {
+                    result = LookupKey.instance.getKeyFromAAX(aaxFile, this);
+                } catch (Exception e) {
+                    err = e.getMessage();
+
+                }
+            }
+        }
+        ;
+        LookupTask task = new LookupTask();
+
+        ProgressDialog.doProgressTask(task);
+        if (task.err != null) {
+            MessageBoxFactory.showError(null, "Unable to get Key\nError:" + task.err);
+            return null;
+        } else {
+            return task.result;
+        }
+
+    }
+*/
+
 	public int selectedAAXCount() {
 		int count = 0;
 		for (Book b : getSelected()) {
@@ -176,47 +243,44 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		}
 		downloadAAX(l);
 	}
-	/*
-	public void connect(IProgressTask progressTask) {
-		AudibleScraper scraper = null;
-		try {
-			
-			scraper = connect(progressTask, audible.getAudibleLibraryURL());
-			
-		} catch (Exception e) {
-			
-			
-			LOG.info("Error connecting", e);
-			// if (!wasCanceled()) showError(e, "Error connecting. Last page was "+ConnectionNotifier.getInstance().lastErrorURL);
-			
-		} finally {
-			
-			
-			if (scraper != null) {
-				
-				// scraper.setProgress(null);
-				scraper.quit();    //
-			}
-			
-		}
-	}
-	*/
-	/*
+
 	public void connect() {
+		if (!hasLogin()) {
+			MessageBoxFactory.showGeneral(null, 0, "Missing credentials", "This version requires your audible email and password to be set in preferences.");
+		} else {
+
+			ProgressTask task = new ProgressTask("Connecting...") {
+				public void run() {
+					AudibleScraper scraper = null;
+
+					try {
+						scraper = connect(this);
+						if (scraper == null) return;
+						setTask("Checking library...", "");
+						scraper.lib();
+						setTask("Completed", "");
+					} catch (Exception e) {
+
+
+						LOG.info("Error connecting", e);
+						if (!wasCanceled())
+							showError(e, "refreshing book information");
+					} finally {
+						audible.setProgress(null);
+						if (scraper != null) {
+							scraper.setProgress(null);
+						}
+
+					}
+
+				}
+			};
+
+			ProgressDialog.doProgressTask(task);
+
+		}
 		
-		ProgressTask task = new ProgressTask("Connecting...") {
-			public void run() {
-				
-				connect(this);
-				
-			}
-		};
-		
-		ProgressDialog.doProgressTask(task);
-		
-		
-	}*/
-	
+	}
 	
 	public void downloadAAX(Collection<Book> list) {
 		audible.downloadQueue.addAll(list);
@@ -249,7 +313,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 					AudibleScraper s = connect(this);
 					if (s == null)
 						return;
-					audible.updateLibrary(s, quickRescan);
+					audible.updateLibrary(quickRescan);
 					setTask("Completed", "");
 					audible.save();
 					bookNotifier.booksUpdated();
@@ -277,7 +341,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 					}
 					
 				} finally {
-				
+					audible.setProgress(null);
 				}
 				
 			}
@@ -289,57 +353,46 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 			downloadAndConvertWithDialog();
 	}
 	
-	// basic connect to audible and check to see if logged in. Show message if not logged in.
-	public void connect() {
-		
-		ProgressTask task = new ProgressTask("Connecting...") {
-			@Override
-			public void run() {
-				try {
-					connect(this);
-				} catch (Exception e) {
-					String body = "TODO: Fix this message.";
-					MessageBoxFactory.showMessage(null, 0, "Not logged in", body);
-					e.printStackTrace();
-					browse("/", true);
-				}
-			}
-			
-		};
-		ProgressDialog.doProgressTask(task);
-		
-	}
-	
-	;
-	
-	
-	private AudibleScraper connect(IProgressTask progressTask) throws Exception {
-		
-		String url = "/";
-		
-		if (url.equals(""))
-			url = "/";
+	// returns null if not logged in.
+	private AudibleScraper connect(ProgressTask progressTask) throws Exception {
+		audible.setProgress(progressTask);
 		progressTask.setTask("Connecting...", "");
-		if (!hasBrowser()) {
-			progressTask.setSubTask("Creating Browser");
-			createBrowser(url, false);
+		final AudibleScraper s = audible.getScraper(false);
+		if (s != null && !s.isLoggedIn()) {
+			if (browser != null) {
+				LOG.info("Setting cookies 1");
+
+				SWTAsync.block(new SWTAsync("connect") {
+					@Override
+					public void task() {
+						LOG.info("Done Setting cookies 2");
+						updateCookies(s, false);
+						LOG.info("Done Setting cookies 3");
+					}
+				});
+				LOG.info("Done Setting cookies 4");
+			}
+
 		}
-		
-		final AudibleScraper s = new AudibleScraper(audible.getAccount(), browser.getBrowserWebClient(), progressTask);
-		
+
 		try {
-			progressTask.setSubTask("Checking logged in");
-			s.checkLoggedIn();
-			return s;
+			
+			s.home();
+
+			if (ConnectionNotifier.getInstance().isConnected())
+				return s;
+
 		} catch (Throwable th) {
 			LOG.error("unable to connect", th);
 		}
 		
-		progressTask.setSubTask(url);
-		HtmlPage page = s.setURL(url);
-		s.checkLoggedIn();
+		String page = s.getPageURL();
+		if (page == null)
+			page = audible.getAudibleURL();
 		
-		return s;
+		browse(page);
+		return null;
+
 	}
 	
 	private void downloadAndConvertWithDialog() {
@@ -347,7 +400,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		Collection<Book> conv = audible.toConvert();
 		
 		if (dl.size() == 0 && conv.size() == 0) {
-			String upToDate = "Your library appears up to date! Go buy more Audible books!\n(If new books weren't found, check the console.)";
+			String upToDate = "Your library is up to date! Go buy more Audible books!";
 			MessageBoxFactory.showGeneral(null, SWT.ICON_INFORMATION, "Up to date", upToDate);
 		} else {
 			String msg = "";
@@ -441,6 +494,11 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		return false;
 	}
 	
+	// has login credentials.
+	public boolean hasLogin() {
+		return true;
+	}
+
 	public boolean canViewInAudible() {
 		Book b = onlyOneSelected();
 		if (b != null) {
@@ -536,10 +594,10 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 			Book b = onlyOneSelected();
 			File m = audible.getMP3FileDest(b);
 			if (m.exists()) {
-				//GUI.explore(m);
+				GUI.explore(m);
 				
 				
-				Desktop.getDesktop().open(m.getParentFile());
+				// Desktop.getDesktop().open(m.getParentFile());
 			}
 		} catch (Throwable th) {
 			showError(th, "showing file in system");
@@ -552,7 +610,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 			link = audible.getAudibleURL() + link;
 		
 		if (link.startsWith("http")) {
-			browse(link, true);
+			browse(link);
 		}
 	}
 	
@@ -577,7 +635,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 					String u = i.toString();
 					LOG.info("Book html file is: " + index.getAbsolutePath() + " url=" + u);
 					if (showUserInterface)
-						AudibleGUI.instance.browse(u, true);
+						AudibleGUI.instance.browse(u);
 				} catch (Exception e) {
 					showError(e, "displaying web page");
 				}
@@ -599,29 +657,20 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		
 		ProgressTask task = new ProgressTask("Refresh Book Info") {
 			public void run() {
-				
+				AudibleScraper scraper = null;
 				
 				try {
-					final AudibleScraper scraper = connect(this);
+					audible.setProgress(this);
 					
 					setTask("Connecting", "");
-					
+					scraper = audible.getScraper();
+					scraper.setProgress(this);
 					int count = 0;
 					List<Book> selected = getSelected();
-					List<Book> errors = new ArrayList<>();
-					
 					for (Book b : selected) {
 						count++;
-						if (selected.size() > 1)
-							setTask("" + count + " of " + selected.size() + " " + b.toString());
-						else setTask(b.toString());
-						
-						try {
-							audible.updateInfo(b, scraper);
-						} catch (Exception e) {
-							LOG.error("Error updating " + b, e);
-							errors.add(b);
-						}
+						setTask("" + count + " of " + selected.size() + " " + b.toString());
+						audible.updateInfo(b);
 						AAXParser.instance.update(b);
 						bookNotifier.bookUpdated(b);
 					}
@@ -632,6 +681,9 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 					if (!wasCanceled())
 						showError(e, "refreshing book information");
 				} finally {
+					audible.setProgress(null);
+					if (scraper != null)
+						scraper.setProgress(null);
 				}
 				
 			}
@@ -757,7 +809,31 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		
 	}
 	
-	/*
+	public void browse() {
+		browse(audible.getAudibleURL() + "/lib");
+	}
+
+	public String browseSettings() {
+		return audible.getAudibleURL() + "/account/settings";
+	}
+
+	public void browse(final String url) {
+
+
+		SWTAsync.run(new SWTAsync("browse") {
+			@Override
+			public void task() {
+				if (browser == null || browser.isDisposed()) {
+					browser = AudibleBrowser.newBrowserWindow(Application.display, url);
+				} else {
+					browser.setUrl(url);
+				}
+			}
+		});
+
+
+	}
+
 	public boolean updateCookies(AudibleScraper s, boolean showBrowser) {
 		SWTAsync.assertGUI();
 		if (browser == null || browser.isDisposed()) {
@@ -779,19 +855,24 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		}
 		
 		return false;
-	}*/
+	}
 	
 	public boolean logout() {
 		SWTAsync.assertGUI();
 		
-		if (hasBrowser() && loggedIn) {
-			try {
-				String url = userPass.audibleRegion.getBaseURL() + "/signout";
-				browser.setUrl(url);
-				browser.close();
-			} catch (Throwable th) {
-				LOG.error("ignoring log out error", th);
-			}
+		if (browser != null && !browser.isDisposed()) {
+
+			String url = userPass.audibleRegion.getBaseURL() + "/signout";
+			browser.setUrl(url);
+			browser.close();
+		}
+
+
+		try {
+			audible.logout();
+			return true;
+		} catch (Throwable e) {
+			LOG.info("unable to set cookies: ", e);
 		}
 		return false;
 	}
@@ -834,7 +915,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 	}
 	
 	public void test1() {
-		
+
 	}
 	
 	// called after every book is downloaded or converted.
@@ -906,6 +987,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 			
 			public void run() {
 				try {
+					audible.setProgress(this);
 					this.setTask("Loading");
 					load();
 					
@@ -927,6 +1009,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 					
 					MessageBoxFactory.showError(null, e);// , "loading library");
 				} finally {
+					audible.setProgress(null);
 				}
 				
 			}
@@ -1056,15 +1139,15 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 	}
 	
 	@Override
-	public void loginFailed(String url, String title, String html) {
-		
+	public void loginFailed(String url, String html) {
 		
 		SWTAsync.slow(new SWTAsync("Need to open browser...") {
 			public void task() {
-				setBrowserVisible(true);
-				String message = "Unable to automatically log in... \n\nLast Page:" + title + "\nPlease use the OpenAudible web browser to log onto your audible account and navigate to your library (list of books) and try to connect again." +
-						"\n\nOpen OpenAudible Browser Now?\n" + url;
-				MessageBoxFactory.showError(browser.getShell(), message);
+				String message = "Unable to automatically log in... \n\nPlease use the OpenAudible web browser to log onto your audible account and navigate to your library (list of books) and try to connect again." +
+						"\n\nOpen OpenAudible Browser Now?";
+				boolean ok = MessageBoxFactory.showGeneralYesNo(null, "Log in to your audible account", message);
+				if (ok)
+					browse(url);
 			}
 		});
 	}
@@ -1123,88 +1206,7 @@ public class AudibleGUI implements BookListener, ConnectionListener {
 		return false;
 		
 	}
-	
-	public void toggleBrowser() {
-		if (browser == null) {
-			createBrowser();
-		} else {
-			setBrowserVisible(!isBrowserVisible());
-			if (isBrowserVisible())
-				browser.getShell().setActive();
-		}
-	}
-	
-	public boolean isBrowserVisible() {
-		return browser != null && browser.isVisible();
-		
-	}
-	
-	public void setBrowserVisible(boolean b) {
-		browser.setVisible(b);
-	}
-	
-	public void browse(boolean visible) {
-		browse(audible.getAudibleLibraryURL(), visible);
-	}
-	
-	public void browse(String url) {
-		browse(url, true);
-	}
-	
-	public String browseSettings() {
-		return audible.getAudibleURL() + "/account/settings";
-	}
-	
-	public AudibleBrowser createBrowser(String url, boolean visible) {
-		assert (!hasBrowser());
-		SWTAsync.block2(() -> {
-			browser = AudibleBrowser.newBrowserWindow(url, visible);
-		});
-		
-		
-		return browser;
-	}
-	
-	public AudibleBrowser createBrowser() {
-		AudibleBrowser b;
-		if (false) {
-			b = createBrowser(audible.getAudibleLibraryURL(), true);
-		} else {
-			try {
-				b = createBrowser("", true);
-				try {
-					connect(new NullProgressTask());
-				} catch (Exception e) {
-					// Show Error.
-					e.printStackTrace();
-				}
-			} finally {
-			
-			}
-		}
-		
-		
-		return b;
-	}
-	
-	public boolean hasBrowser() {
-		return browser != null && !browser.isDisposed();
-	}
-	
-	public void browse(final String url, boolean visible) {
-		
-		SWTAsync.run(new SWTAsync("browse") {
-			@Override
-			public void task() {
-				if (!hasBrowser())
-					createBrowser(url, visible);
-				else
-					browser.setUrl(url);
-			}
-		});
-		
-		
-	}
+
 	
 	class BookQueueListener implements IQueueListener<Book> {
 		

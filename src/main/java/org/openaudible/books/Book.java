@@ -384,8 +384,7 @@ public class Book implements Comparable<Book>, Serializable {
 			try {
 				Date d = parseFormat.parse(date);
 				SimpleDateFormat displayFormat = new SimpleDateFormat(newFormat, Locale.ENGLISH);
-				String out = displayFormat.format(d);
-				return out;
+				return displayFormat.format(d);
 			} catch (ParseException var8) {
 				var8.printStackTrace();
 			}

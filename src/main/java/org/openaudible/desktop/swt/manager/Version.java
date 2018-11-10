@@ -1,7 +1,8 @@
 package org.openaudible.desktop.swt.manager;
 
-public interface Version {
-	
+public interface Version
+{
+
 	String appName = "OpenAudible";
 	String appVersion = "1.2.6";
 	boolean appDebug = false;

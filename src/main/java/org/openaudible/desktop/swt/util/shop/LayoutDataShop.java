@@ -35,15 +35,17 @@ import org.eclipse.swt.layout.GridData;
  * @author <a href="mailto:bpasero@rssowl.org">Benjamin Pasero </a>
  * @version 1.0.2
  */
-public class LayoutDataShop {
-	
+public class LayoutDataShop
+{
+
 	/**
 	 * This utility class constructor is hidden
 	 */
-	private LayoutDataShop() {
+	private LayoutDataShop()
+	{
 		//Protect default constructor
 	}
-	
+
 	/**
 	 * Create a new FormData with the given Parameters
 	 *
@@ -53,7 +55,8 @@ public class LayoutDataShop {
 	 * @param marginBottom Margin in pixel to the bottom
 	 * @return FormData with the given parameters
 	 */
-	public static FormData createFormData(int marginLeft, int marginRight, int marginTop, int marginBottom) {
+	public static FormData createFormData(int marginLeft, int marginRight, int marginTop, int marginBottom)
+	{
 		FormData formData = new FormData();
 		formData.top = new FormAttachment(0, marginTop);
 		formData.left = new FormAttachment(0, marginLeft);
@@ -61,7 +64,7 @@ public class LayoutDataShop {
 		formData.bottom = new FormAttachment(100, marginBottom);
 		return formData;
 	}
-	
+
 	/**
 	 * Create a new GridData with the given parameters
 	 *
@@ -69,10 +72,11 @@ public class LayoutDataShop {
 	 * @param horizontalSpan Horizontal span
 	 * @return GridData with the given parameters
 	 */
-	public static GridData createGridData(int style, int horizontalSpan) {
+	public static GridData createGridData(int style, int horizontalSpan)
+	{
 		return createGridData(style, horizontalSpan, SWT.DEFAULT);
 	}
-	
+
 	/**
 	 * Create a new GridData with the given parameters
 	 *
@@ -81,10 +85,11 @@ public class LayoutDataShop {
 	 * @param widthHint      Width hint in pixel
 	 * @return GridData with the given parameters
 	 */
-	public static GridData createGridData(int style, int horizontalSpan, int widthHint) {
+	public static GridData createGridData(int style, int horizontalSpan, int widthHint)
+	{
 		return createGridData(style, horizontalSpan, widthHint, SWT.DEFAULT);
 	}
-	
+
 	/**
 	 * Create a new GridData with the given parameters
 	 *
@@ -94,7 +99,8 @@ public class LayoutDataShop {
 	 * @param heightHint     Height hint in pixel
 	 * @return GridData with the given parameters
 	 */
-	public static GridData createGridData(int style, int horizontalSpan, int widthHint, int heightHint) {
+	public static GridData createGridData(int style, int horizontalSpan, int widthHint, int heightHint)
+	{
 		GridData g = new GridData(style);
 		g.horizontalSpan = horizontalSpan;
 		g.widthHint = widthHint;

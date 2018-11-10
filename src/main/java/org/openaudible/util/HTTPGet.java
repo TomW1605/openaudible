@@ -11,23 +11,27 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
-public enum HTTPGet {
+public enum HTTPGet
+{
 	instance;
-	
-	public JSONObject getJSON(String url) throws IOException {
-		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+
+	public JSONObject getJSON(String url) throws IOException
+	{
+		try (CloseableHttpClient httpclient = HttpClients.createDefault())
+		{
 			HttpGet httpget = new HttpGet(url);
-			try (CloseableHttpResponse httpResponse = httpclient.execute(httpget)) {
-				
+			try (CloseableHttpResponse httpResponse = httpclient.execute(httpget))
+			{
+
 				HttpEntity httpEntity = httpResponse.getEntity();
-				if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+				if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK)
+				{
 					String entity = EntityUtils.toString(httpEntity);
 					return new JSONObject(entity);
-					
 				}
 				throw new IOException(httpResponse.getStatusLine().getReasonPhrase());
 			}
 		}
 	}
-	
+
 }

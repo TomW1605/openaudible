@@ -31,8 +31,9 @@ package org.openaudible.desktop.swt.i8n;
  * @author <a href="mailto:bpasero@rssowl.org">Benjamin Pasero </a>
  * @version 1.0.2
  */
-public interface ITranslatable {
-	
+public interface ITranslatable
+{
+
 	/**
 	 * Update translation of all String literals
 	 */

@@ -1,102 +1,118 @@
 package org.openaudible.audible;
 
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openaudible.AudibleAccountPrefs;
 import org.openaudible.util.EventNotifier;
 
-
-public class ConnectionNotifier extends EventNotifier<ConnectionListener> implements ConnectionListener {
+public class ConnectionNotifier extends EventNotifier<ConnectionListener> implements ConnectionListener
+{
 	public static final ConnectionNotifier instance = new ConnectionNotifier();
 	State state = State.Not_Connected;
 	private static final Log LOG = LogFactory.getLog(ConnectionNotifier.class);
-	
+
 	private String lastURL = "";
 
-
-	private ConnectionNotifier() {
+	private ConnectionNotifier()
+	{
 	}
-	
-	public static ConnectionNotifier getInstance() {
+
+	public static ConnectionNotifier getInstance()
+	{
 		return instance;
 	}
-	
+
 	@Override
-	public void connectionChanged(boolean connected) {
-		
+	public void connectionChanged(boolean connected)
+	{
+
 		State newState = connected ? State.Connected : State.Disconnected;
-		if (state != newState) {
+		if (state != newState)
+		{
 			state = newState;
-			for (ConnectionListener l : getListeners()) {
+			for (ConnectionListener l : getListeners())
+			{
 				l.connectionChanged(connected);
 			}
 		}
-		
 	}
 
-	public boolean isConnected() {
+	public boolean isConnected()
+	{
 		return getState() == State.Connected;
 	}
-	
+
 	// allow gui to pass back new credentials.
-	public AudibleAccountPrefs getAccountPrefs(AudibleAccountPrefs in) {
+	public AudibleAccountPrefs getAccountPrefs(AudibleAccountPrefs in)
+	{
 		AudibleAccountPrefs out = in;
-		
-		for (ConnectionListener l : getListeners()) {
+
+		for (ConnectionListener l : getListeners())
+		{
 			out = l.getAccountPrefs(out);
-			if (out == null) return null; // canceled
+			if (out == null)
+			{
+				return null; // canceled
+			}
 		}
 		return out;
 	}
-	
-	public void signout() {
+
+	public void signout()
+	{
 		state = State.SignedOut;
 		ConnectionNotifier.getInstance().connectionChanged(false);
 	}
-	
-	public State getState() {
+
+	public State getState()
+	{
 		return state;
 	}
-	
-	public String getStateString() {
+
+	public String getStateString()
+	{
 		return state.name().replace('_', ' ');
 	}
-	
-	public boolean isDisconnected() {
+
+	public boolean isDisconnected()
+	{
 		return getState() == State.Disconnected;
 	}
-	
-	public String getLastURL() {
+
+	public String getLastURL()
+	{
 		return lastURL;
 	}
 
-	public void setLastURL(String lastURL) {
+	public void setLastURL(String lastURL)
+	{
 		this.lastURL = lastURL;
-		if (!lastURL.contains("audible")) {
+		if (!lastURL.contains("audible"))
+		{
 			LOG.warn("expected audible");
 		}
 		LOG.info("Setting lastURL to:" + lastURL);
 	}
 
-
 	// not connected is unknown.
 	// connected means in account
 	// disconnected means a password is being asked for.
-	enum State {
+	enum State
+	{
 		Not_Connected, Connected, Disconnected, SignedOut
 	}
-	
-	
+
 	@Override
-	public void loginFailed(String url, String html) {
-		
-		if (state != State.SignedOut) {
-			for (ConnectionListener l : getListeners()) {
+	public void loginFailed(String url, String html)
+	{
+
+		if (state != State.SignedOut)
+		{
+			for (ConnectionListener l : getListeners())
+			{
 				l.loginFailed(url, html);
 			}
 		}
-		
 	}
 }
 

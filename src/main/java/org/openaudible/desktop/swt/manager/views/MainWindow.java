@@ -8,7 +8,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 
-public class MainWindow extends GridComposite {
+public class MainWindow extends GridComposite
+{
 	private static final Log LOG = LogFactory.getLog(MainWindow.class);
 	final int gdFlags = GridData.VERTICAL_ALIGN_BEGINNING;
 	BookTable bookTable;
@@ -16,8 +17,9 @@ public class MainWindow extends GridComposite {
 	StatusPanel status;
 	boolean useToolbar = false;
 	public SearchField searchField;
-	
-	public MainWindow(Composite c) {
+
+	public MainWindow(Composite c)
+	{
 		super(c, SWT.NONE);
 		initLayoutFillMax();
 		SashForm main = new SashForm(this, SWT.VERTICAL);
@@ -28,56 +30,58 @@ public class MainWindow extends GridComposite {
 		// top a little bigger than the bottom..
 		int weights[] = {60, 40};
 		main.setWeights(weights);
-		
+
 		FileDropTarget.attach(main);
-		
 	}
-	
-	void createTop(Composite parent) {
+
+	void createTop(Composite parent)
+	{
 		GridComposite c = new GridComposite(parent, SWT.NONE);
-		
+
 		c.initLayout(1, false, GridData.FILL_BOTH);
 		GridComposite row;
 		// c.debugLayout(SWT.COLOR_DARK_MAGENTA);
-		
+
 		// Row 1, search bar and button bar.
-		if (useToolbar) {
+		if (useToolbar)
+		{
 			row = new GridComposite(c, SWT.BORDER_DOT, useToolbar ? 2 : 1, false, GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING);
 			searchField = new SearchField(row, 180, GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.VERTICAL_ALIGN_BEGINNING);
 			BookButtonBar b = new BookButtonBar(row, GridData.GRAB_HORIZONTAL | GridData.HORIZONTAL_ALIGN_END | GridData.VERTICAL_ALIGN_BEGINNING);
-		} else {
+		}
+		else
+		{
 			row = new GridComposite(c, SWT.BORDER_DOT, 1, false, GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING);
 			row.noMargins();
 			searchField = new SearchField(row, 120, GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.VERTICAL_ALIGN_BEGINNING);
 		}
-		
+
 		// Row 2. Status and selected book
 		{
 			row = new GridComposite(c, 0);
 			row.initLayout(2, false, gdFlags | GridData.FILL_BOTH | GridData.GRAB_HORIZONTAL | GridData.GRAB_VERTICAL);
 			libraryStatus(row);
 			selectedBook(row);
-			
-			
 		}
-		
-		
 	}
-	
-	void libraryStatus(GridComposite row) {
+
+	void libraryStatus(GridComposite row)
+	{
 		Composite statusGroup = row.newGroup("Library Status");
 		GridData gd = new GridData(gdFlags);
 		gd.widthHint = 250;
 		statusGroup.setLayoutData(gd);
 		status = new StatusPanel(statusGroup);
 	}
-	
-	private void createBottom(Composite parent) {
+
+	private void createBottom(Composite parent)
+	{
 		bookTable = new BookTable(parent);
 		bookTable.getTable().setFocus();
 	}
-	
-	private void selectedBook(GridComposite row) {
+
+	private void selectedBook(GridComposite row)
+	{
 		Composite group = row.newGroup("Audio Book Info", 1);
 		group.setLayoutData(new GridData(gdFlags | GridData.FILL_BOTH | GridData.GRAB_HORIZONTAL | GridData.GRAB_VERTICAL));
 		info = new BookInfoPanel(group);

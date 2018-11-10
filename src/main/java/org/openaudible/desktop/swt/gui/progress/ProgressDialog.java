@@ -12,7 +12,8 @@ import org.openaudible.desktop.swt.util.shop.PaintShop;
 
 import java.lang.reflect.InvocationTargetException;
 
-public class ProgressDialog extends ProgressMonitorDialog {
+public class ProgressDialog extends ProgressMonitorDialog
+{
 	final static String USER_CANCELED_MESSAGE = "User Canceled";
 	private static Log log = LogFactory.getLog(ProgressDialog.class);
 	boolean lock = false;
@@ -87,25 +88,32 @@ public class ProgressDialog extends ProgressMonitorDialog {
 	//	}
 	//
 	long timer = 0;
-	
-	public ProgressDialog(Shell shell) {
+
+	public ProgressDialog(Shell shell)
+	{
 		super(shell);
-		
+
 		shell.setImages(PaintShop.getAppIconList());
 		init(shell);
-		for (; ; ) {
-			synchronized (waitObj) {
+		for (; ; )
+		{
+			synchronized (waitObj)
+			{
 				if (closed)
+				{
 					break;
-				try {
+				}
+				try
+				{
 					waitObj.wait(1000);
-				} catch (InterruptedException ie) {
+				} catch (InterruptedException ie)
+				{
 					log.error(ie);
 				}
 			}
 		}
 	}
-	
+
 	//	public ProgressDialog(Shell parent, IRunnableWithProgress t)
 	//	{
 	//		super(parent);
@@ -113,57 +121,63 @@ public class ProgressDialog extends ProgressMonitorDialog {
 	//		init(shell);
 	//	}
 	//
-	public ProgressDialog(Shell parent, Thread t) {
+	public ProgressDialog(Shell parent, Thread t)
+	{
 		super(parent);
 		simpleThread = t;
 		init(parent);
 	}
-	
-	public static void doProgressTask(final ProgressTask t) {
+
+	public static void doProgressTask(final ProgressTask t)
+	{
 		doProgressTask(null, t);
 	}
-	
-	public static void doProgressTask(final Shell s, final ProgressTask t) {
-		SWTAsync.slow(new SWTAsync("doProgressTask") {
-			public void task() {
+
+	public static void doProgressTask(final Shell s, final ProgressTask t)
+	{
+		SWTAsync.slow(new SWTAsync("doProgressTask")
+		{
+			public void task()
+			{
 				ProgressDialog p = new ProgressDialog(s, t);
-				
+
 				t.setProgress(p);
 				p.open();
 				p.getShell().setText(t.getName()); //$NON-NLS-1$
-				
+
 				// pd.taskLabel.setText("taskLabel");
 				// pd.messageLabel.setText("messageLabel");
-				
+
 				p.runTask();
-				
 			}
 		});
 	}
-	
-	public void cancelPressed() {
+
+	public void cancelPressed()
+	{
 		super.cancelPressed();
-		
-		if (simpleThread instanceof ProgressTask) {
+
+		if (simpleThread instanceof ProgressTask)
+		{
 			((ProgressTask) simpleThread).userCanceled();
-			
 		}
-		
 	}
-	
-	public boolean needUpdate() throws InterruptedException {
+
+	public boolean needUpdate() throws InterruptedException
+	{
 		long now = System.currentTimeMillis();
 		long delta = now - timer;
-		if (delta > 100) {
+		if (delta > 100)
+		{
 			timer = now;
 			throwIfCanceled();
 			Thread.yield();
 			return true;
 		}
-		
+
 		return false;
 	}
-	
+
 	//	private static boolean setTask(String task, String subtask) throws InterruptedException
 	//	{
 	//		if (pd != null)
@@ -189,7 +203,7 @@ public class ProgressDialog extends ProgressMonitorDialog {
 	//	{
 	//
 	//	}
-	
+
 	//	private static void setDone()
 	//	{
 	//		if (pd != null)
@@ -199,13 +213,14 @@ public class ProgressDialog extends ProgressMonitorDialog {
 	//			// pd = null;
 	//		}
 	//	}
-	
+
 	// call this if you want to force a periodic message to appear...
 	// call when "changing gears" so new message will appear..
-	public void clearTimer() {
+	public void clearTimer()
+	{
 		timer = 0;
 	}
-	
+
 	//	private static void block()
 	//	{
 	//		try
@@ -226,40 +241,50 @@ public class ProgressDialog extends ProgressMonitorDialog {
 	//			log.report(ie);
 	//		}
 	//	}
-	public void println(final String o) throws InterruptedException {
+	public void println(final String o) throws InterruptedException
+	{
 		throwIfCanceled();
 	}
-	
-	public boolean canceled() {
+
+	public boolean canceled()
+	{
 		return getProgressMonitor().isCanceled();
 	}
-	
-	public void throwIfCanceled(IProgressMonitor m) throws InterruptedException {
+
+	public void throwIfCanceled(IProgressMonitor m) throws InterruptedException
+	{
 		if (m != null && m.isCanceled())
+		{
 			throw new InterruptedException(USER_CANCELED_MESSAGE);
+		}
 	}
-	
-	public void throwIfCanceled() throws InterruptedException {
+
+	public void throwIfCanceled() throws InterruptedException
+	{
 		throwIfCanceled(getProgressMonitor());
 	}
-	
+
 	// public void setTaskAsync(final String task, final String subtask) throws InterruptedException
-	public void beginTaskUndefined(final String state) throws InterruptedException {
+	public void beginTaskUndefined(final String state) throws InterruptedException
+	{
 		beginTask(state, IProgressMonitor.UNKNOWN);
 	}
-	
-	public void beginTask(final String state, final int count) throws InterruptedException {
+
+	public void beginTask(final String state, final int count) throws InterruptedException
+	{
 		final IProgressMonitor m = getProgressMonitor();
-		SWTAsync.run(new SWTAsync("progress dialog begin") {
-			public void task() {
-				
+		SWTAsync.run(new SWTAsync("progress dialog begin")
+		{
+			public void task()
+			{
+
 				m.beginTask(state, count);
 			}
 		});
 		Thread.yield();
 		throwIfCanceled(m);
 	}
-	
+
 	//	static public boolean inProgress()
 	//	{
 	//		return (pd != null);
@@ -273,115 +298,147 @@ public class ProgressDialog extends ProgressMonitorDialog {
 	//		}
 	//		return pd.getProgressMonitor().isCanceled();
 	//	}
-	
+
 	// ProgressMonitorDialog pb;
-	
-	public void worked(final int count) {
+
+	public void worked(final int count)
+	{
 		final IProgressMonitor m = getProgressMonitor();
-		SWTAsync.run(new SWTAsync("progress dialog worked") {
-			public void task() {
+		SWTAsync.run(new SWTAsync("progress dialog worked")
+		{
+			public void task()
+			{
 				m.worked(count);
 			}
 		});
 	}
-	
-	public void setTaskAsync(final String task, final String subtask) {
+
+	public void setTaskAsync(final String task, final String subtask)
+	{
 		final IProgressMonitor m = getProgressMonitor();
 		if (m == null)
+		{
 			return;
-		
-		SWTAsync.run(new SWTAsync("progress dialog task: " + task) {
-			public void task() {
-				if (task != null) {
-					if (subtask == null || subtask.length() == 0) {
-						try {
+		}
+
+		SWTAsync.run(new SWTAsync("progress dialog task: " + task)
+		{
+			public void task()
+			{
+				if (task != null)
+				{
+					if (subtask == null || subtask.length() == 0)
+					{
+						try
+						{
 							println(task); // such a kludge...
-						} catch (Exception e) {
+						} catch (Exception e)
+						{
 							// TODO: handle exception
 						}
 					}
-					
+
 					m.setTaskName(task);
 				}
 				if (subtask != null)
+				{
 					m.subTask(subtask);
+				}
 			}
 		});
 	}
-	
-	public void operationWasCanceled() {
+
+	public void operationWasCanceled()
+	{
 		MessageDialog.openInformation(shell, "Cancelled", "Operation was caneled.");
 	}
-	
-	public void runTask() {
-		try {
-			if (task == null) {
+
+	public void runTask()
+	{
+		try
+		{
+			if (task == null)
+			{
 				task = new LongRunningOperation();
 			}
-			
+
 			boolean canCancel = true;
-			if (simpleThread instanceof ProgressTask) {
+			if (simpleThread instanceof ProgressTask)
+			{
 				canCancel = ((ProgressTask) simpleThread).canCancel();
 			}
-			
+
 			//DebugLog.println("Running Progress Task: " + task.toString());
 			run(true, canCancel, task);
-		} catch (InvocationTargetException e) {
+		} catch (InvocationTargetException e)
+		{
 			log.error(e);
 			MessageDialog.openError(shell, "Error", e.getMessage());
 			runException = e;
-		} catch (InterruptedException e) {
+		} catch (InterruptedException e)
+		{
 			runException = e;
 			log.error(e);
 			operationWasCanceled();
-			
-		} catch (Throwable e) {
+		} catch (Throwable e)
+		{
 			runException = e;
 			log.error(e);
 		}
 		done();
 	}
-	
-	protected void init(Shell is) {
+
+	protected void init(Shell is)
+	{
 		this.shell = is;
-		
+
 		setOpenOnRun(true);
 	}
-	
-	void setMinimum(int c) {
+
+	void setMinimum(int c)
+	{
 		// pb.setMinimum(c);
 	}
-	
-	void setMaximum(int c) {
+
+	void setMaximum(int c)
+	{
 		// pb.setMaximum(c);
 	}
-	
-	void setSelection(int x) {
+
+	void setSelection(int x)
+	{
 		// pb.setSelection(x);
 	}
-	
-	public void done() {
+
+	public void done()
+	{
 		// s.dispose();
-		synchronized (waitObj) {
+		synchronized (waitObj)
+		{
 			closed = true;
 			waitObj.notifyAll();
 			lock = false;
 		}
 		close();
 	}
-	
-	class LongRunningOperation implements IRunnableWithProgress {
-		public void run(IProgressMonitor monitor) throws InterruptedException {
+
+	class LongRunningOperation implements IRunnableWithProgress
+	{
+		public void run(IProgressMonitor monitor) throws InterruptedException
+		{
 			// DebugLog.println("Running task");
 			monitor.beginTask("Running task ", IProgressMonitor.UNKNOWN);
-			if (simpleThread != null) {
+			if (simpleThread != null)
+			{
 				simpleThread.start();
 				simpleThread.join();
 			}
 			// DebugLog.println("Task complete.");
 			monitor.done();
 			if (monitor.isCanceled())
+			{
 				throw new InterruptedException("The operation was cancelled");
+			}
 		}
 	}
 }

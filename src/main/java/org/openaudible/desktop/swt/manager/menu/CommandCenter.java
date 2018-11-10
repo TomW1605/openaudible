@@ -28,7 +28,8 @@ import org.openaudible.desktop.swt.util.shop.WidgetShop;
  * The execute command is the main switch for running commands
  */
 
-public class CommandCenter {
+public class CommandCenter
+{
 	public final static Log logger = LogFactory.getLog(CommandCenter.class);
 	public static CommandCenter instance;
 	public boolean expiredApp = false;
@@ -37,149 +38,197 @@ public class CommandCenter {
 	private Clipboard cb;
 	private Application app;
 	private Shell shell;
-	
-	public CommandCenter(Display display, Shell shell, Application a) {
+
+	public CommandCenter(Display display, Shell shell, Application a)
+	{
 		this.shell = shell;
 		this.app = a;
 		instance = this;
 		cb = new Clipboard(display);
 	}
-	
-	public void userError(String s) {
+
+	public void userError(String s)
+	{
 		MessageBoxFactory.showMessage(shell, SWT.ICON_INFORMATION, GUI.i18n.getTranslation("Unexpected event"), s);
 	}
-	
-	public void handleMenuAction(MenuItem item) {
+
+	public void handleMenuAction(MenuItem item)
+	{
 		Object obj = item.getData();
-		if (obj != null) {
+		if (obj != null)
+		{
 			logger.info(obj);
 		}
 	}
-	
+
 	public void handleMenuAction(Command cmd, MenuItem item) // throws Exception
 	{
-		try {
+		try
+		{
 			execute(cmd);
 			app.updateMenus();
-		} catch (Throwable t) {
+		} catch (Throwable t)
+		{
 			String task = "ProcessMenu: " + cmd;
 			logger.error(task, t);
 		}
 	}
-	
-	
+
 	/**
 	 * Copy text into clipboard
 	 *
 	 * @param text Any control capable of holding text
 	 */
-	void actionCopyText(Control text) {
+	void actionCopyText(Control text)
+	{
 		/* Control is a StyledText widget */
-		if (text instanceof StyledText) {
-			if (((StyledText) text).getText() != null) {
+		if (text instanceof StyledText)
+		{
+			if (((StyledText) text).getText() != null)
+			{
 				/* User has selected text */
 				if (((StyledText) text).getSelectionCount() > 0)
+				{
 					cb.setContents(new Object[]{((StyledText) text).getSelectionText()}, new Transfer[]{TextTransfer.getInstance()});
-					/* User has not selected text */
+				}
+				/* User has not selected text */
 				else
+				{
 					cb.setContents(new Object[]{((StyledText) text).getText()}, new Transfer[]{TextTransfer.getInstance()});
+				}
 			}
 		}
-		
 	}
-	
-	public void setClipboard(String text) {
+
+	public void setClipboard(String text)
+	{
 		cb.setContents(new Object[]{text}, new Transfer[]{TextTransfer.getInstance()});
 	}
-	
+
 	/**
 	 * Exit application
 	 */
-	void actionExit() {
+	void actionExit()
+	{
 		logger.info("actionExit");
 		/* Force an Exit */
 		if (reallyQuit())
+		{
 			app.onClose(new Event(), true);
+		}
 	}
-	
+
 	/*
 	 * Minimize application window
 	 */
-	void actionMinimizeWindow() {
+	void actionMinimizeWindow()
+	{
 		shell.setMinimized(true);
 	}
-	
-	public void showAbout() {
+
+	public void showAbout()
+	{
 		AboutDialog.doAbout(GUI.shell);
 	}
-	
+
 	/*
 	 * Open the URL in the external browser
 	 *
 	 * @param url The URL to open
 	 */
-	public void actionOpenURL(String url) {
+	public void actionOpenURL(String url)
+	{
 	}
-	
+
 	/**
 	 * This method is called when a MenuItem from the Edit Menu is selected. It will retrieve the current selected control and perform an action based on the given action value and the type of Control that is selected.
 	 *
 	 * @param action One of the supported actions of the edit menu
 	 */
-	boolean handleEditAction(Command action) {
+	boolean handleEditAction(Command action)
+	{
 		/* Retrieve the Focus Control */
 		Control control = GUI.display.getFocusControl();
 		/* No focus control available, return */
 		if (!WidgetShop.isset(control))
+		{
 			return false;
-		
+		}
+
 		/* Perform Edit Action */
-		switch (action) {
+		switch (action)
+		{
 			/* Edit action: Cut */
 			case Cut:
 				if (control instanceof Text)
+				{
 					((Text) control).cut();
+				}
 				else if (control instanceof StyledText)
+				{
 					((StyledText) control).cut();
+				}
 				else if (control instanceof Combo)
+				{
 					((Combo) control).cut();
+				}
 				else
+				{
 					return false;
+				}
 				break;
 			/* Edit action: Copy */
 			case Copy:
 				if (control instanceof Text)
+				{
 					((Text) control).copy();
+				}
 				else if (control instanceof StyledText)
+				{
 					((StyledText) control).copy();
+				}
 				else if (control instanceof Combo)
+				{
 					((Combo) control).copy();
+				}
 				else
+				{
 					return false;
+				}
 				break;
 			/* Edit action: Paste */
 			case Paste:
 				if (control instanceof Text)
+				{
 					((Text) control).paste();
+				}
 				else if (control instanceof StyledText)
+				{
 					((StyledText) control).paste();
+				}
 				else if (control instanceof Combo)
+				{
 					((Combo) control).paste();
+				}
 				else
+				{
 					return false;
+				}
 				break;
-			
+
 			default:
 				return false;
 		}
 		return true;
 	}
-	
-	public void execute(Command c) {
+
+	public void execute(Command c)
+	{
 		CommandCenter e = this;
 		logger.info("Command: " + c);
 
-		switch (c) {
+		switch (c)
+		{
 			case About:
 				e.showAbout();
 				break;
@@ -189,7 +238,7 @@ public class CommandCenter {
 			case Help:
 				AudibleBrowser.showHelp(GUI.display);
 				break;
-			
+
 			case Quit:
 				e.actionExit();
 				break;
@@ -270,28 +319,33 @@ public class CommandCenter {
 				logger.info("Unknown cmd: " + c);
 		}
 	}
-	
-	public boolean reallyQuit() {
+
+	public boolean reallyQuit()
+	{
 		int testsInProgress = 0;
-		
-		if (testsInProgress > 0) {
+
+		if (testsInProgress > 0)
+		{
 			String q = GUI.isMac() ? "Quit?" : "Exit?";
 			String msg = "You have " + testsInProgress;
 			msg += " test(s)";
 			msg += " in progress.\n\nDo you really want to " + q.toLowerCase();
-			
+
 			String buttons[] = {q, "Cancel"};
 			int result = MessageBoxFactory.showGeneral(shell, "Are you sure you want to " + q + "?", msg, buttons, 0, null);
 			return result == 0;
-			
 		}
 		return true;
 	}
-	
-	public boolean getEnabled(Command c) {
+
+	public boolean getEnabled(Command c)
+	{
 		if (expiredApp)
+		{
 			return c == Command.Quit || c == Command.Check_For_Update || c == Command.About;
-		switch (c) {
+		}
+		switch (c)
+		{
 			case Convert:
 				return AudibleGUI.instance.canConvert();
 			case Download:
@@ -302,7 +356,7 @@ public class CommandCenter {
 				return AudibleGUI.instance.canPlay();
 			case Console:
 				return true;
-			
+
 			case Export_Web_Page:
 				return Audible.instance.mp3Count() > 0;
 			case Export_Book_List:
@@ -347,9 +401,7 @@ public class CommandCenter {
 			default:
 				logger.info("no case for getEnabled: " + c);
 				break;
-			
 		}
 		return false;
 	}
-
 }

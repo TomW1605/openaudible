@@ -11,10 +11,12 @@ import org.openaudible.desktop.swt.manager.AudibleGUI;
 import org.openaudible.desktop.swt.util.shop.PaintShop;
 
 // Small search text input field for filtering results based on string.
-public class SearchField extends GridComposite {
+public class SearchField extends GridComposite
+{
 	Text text;
-	
-	public SearchField(Composite c, int widthHint, int gdStyle) {
+
+	public SearchField(Composite c, int widthHint, int gdStyle)
+	{
 		super(c, SWT.NONE);
 		initLayout(2, false, gdStyle);
 		Label l = new Label(this, SWT.NONE);
@@ -25,21 +27,24 @@ public class SearchField extends GridComposite {
 		GridData gd = new GridData();
 		gd.widthHint = widthHint;
 		text.setLayoutData(gd);
-		
-		text.addKeyListener(new KeyListener() {
+
+		text.addKeyListener(new KeyListener()
+		{
 			@Override
-			public void keyReleased(KeyEvent e) {
+			public void keyReleased(KeyEvent e)
+			{
 				AudibleGUI.instance.filterDisplayedBooks(text.getText());
 			}
-			
+
 			@Override
-			public void keyPressed(KeyEvent e) {
+			public void keyPressed(KeyEvent e)
+			{
 			}
 		});
 	}
-	
-	
-	public void setSearchText(String searchText) {
+
+	public void setSearchText(String searchText)
+	{
 		text.setText(searchText);
 		AudibleGUI.instance.filterDisplayedBooks(text.getText());
 	}

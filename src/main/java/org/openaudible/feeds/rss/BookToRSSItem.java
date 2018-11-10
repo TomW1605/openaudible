@@ -16,9 +16,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Date;
 
-public class BookToRSSItem {
+public class BookToRSSItem
+{
 
-	public static Item create(Audible a, File mp3File, Book b) throws MalformedURLException, URISyntaxException {
+	public static Item create(Audible a, File mp3File, Book b) throws MalformedURLException, URISyntaxException
+	{
 		Date d = null;
 
 		String dateString = b.getRelease_date();
@@ -42,12 +44,13 @@ public class BookToRSSItem {
 						.setUrl(mp3URL));
 
 		if (d != null)
+		{
 			item.setPubDate(d);
+		}
 
 		final ItunesImage itemImage = new ItunesImage().setHref("http://www.theTestPodcast.com/images/episode1.png");
 		item.setImage(itemImage);
 
 		return item;
 	}
-
 }

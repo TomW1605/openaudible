@@ -28,22 +28,25 @@ import java.util.Date;
  * limitations under the License.
  */
 
-
-public class CreateRSS {
+public class CreateRSS
+{
 
 	private static final Date currentDate = new Date();
 
-	public static void main(String args[]) {
+	public static void main(String args[])
+	{
 		CreateRSS a = new CreateRSS();
-		try {
+		try
+		{
 			a.demonstrateFullRssFeed();
-		} catch (Exception e) {
+		} catch (Exception e)
+		{
 			e.printStackTrace();
 		}
-
 	}
 
-	public void demonstrateFullRssFeed() throws Exception {
+	public void demonstrateFullRssFeed() throws Exception
+	{
 		final Channel channel = new Channel();
 		channel.setTitle("Test Podcast");
 		channel.setLink("http://www.theTestPodcast.com");
@@ -117,5 +120,4 @@ public class CreateRSS {
 		jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 		jaxbMarshaller.marshal(rss, System.out);
 	}
-
 }

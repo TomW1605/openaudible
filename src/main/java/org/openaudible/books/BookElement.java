@@ -2,15 +2,20 @@ package org.openaudible.books;
 
 // Audio Book Attributes.
 //
-public enum BookElement {
+public enum BookElement
+{
 	product_id, codec, asin, infoLink, fullTitle, author, narratedBy, summary, description, duration, format, rating_average, rating_count, release_date, purchase_date, publisher, genre, shortTitle, copyright, user_id, cust_id, order_number, author_link, type, source;
-	
-	public static BookElement findByName(String s) {
-		
-		try {
+
+	public static BookElement findByName(String s)
+	{
+
+		try
+		{
 			return BookElement.valueOf(s);
-		} catch (Throwable th) {
-			switch (s) {
+		} catch (Throwable th)
+		{
+			switch (s)
+			{
 				case "title":
 					return shortTitle;
 				case "DownloadType":
@@ -21,24 +26,23 @@ public enum BookElement {
 					break;
 				case "transfer_player":
 					break;
-				
+
 				default:
 					//
 					System.out.println("No BookElement:" + s);
 					break;
 			}
-			
-			
 		}
 		return null;
 	}
-	
-	
-	public String displayName() {
+
+	public String displayName()
+	{
 		String o = this.name();
-		
-		switch (this) {
-			
+
+		switch (this)
+		{
+
 			case product_id:
 				o = "Product ID";
 				break;
@@ -111,7 +115,7 @@ public enum BookElement {
 			case source:
 				o = "Source";
 				break;
-			
+
 			default:
 				assert (false);
 		}

@@ -1,6 +1,7 @@
 package org.openaudible.util;
 
-public enum StringTools {
+public enum StringTools
+{
 	instance
-	
+
 }

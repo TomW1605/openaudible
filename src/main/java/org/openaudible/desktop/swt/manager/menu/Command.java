@@ -2,7 +2,8 @@ package org.openaudible.desktop.swt.manager.menu;
 
 import org.openaudible.desktop.swt.i8n.Translate;
 
-public enum Command {
+public enum Command
+{
 	Preferences,
 	Quit,
 	Cut,
@@ -33,12 +34,13 @@ public enum Command {
 	Test1,
 	MenuSeparator,
 	Ignore_Book;
-	
-	
-	public char getKeyEquiv() {
+
+	public char getKeyEquiv()
+	{
 		char cmd = 0;
-		switch (this) {
-			
+		switch (this)
+		{
+
 			case Preferences:
 				cmd = ',';
 				break;
@@ -95,13 +97,14 @@ public enum Command {
 				break;
 		}
 		return cmd;
-		
 	}
-	
-	public String getImage() {
+
+	public String getImage()
+	{
 		String file = null;
-		switch (this) {
-			
+		switch (this)
+		{
+
 			case Preferences:
 				file = "cog.png";
 				break;
@@ -152,21 +155,21 @@ public enum Command {
 				break;
 		}
 		return file;
-		
 	}
-	
-	
-	public String getToolTip() {
+
+	public String getToolTip()
+	{
 		return "";
 	}
-	
-	public String getMenuName() {
+
+	public String getMenuName()
+	{
 		return Translate.getInstance().commandName(this.name());
 	}
-	
-	
-	public String getDisabledImage() {
+
+	public String getDisabledImage()
+	{
 		return null;
 	}
-	
+
 }

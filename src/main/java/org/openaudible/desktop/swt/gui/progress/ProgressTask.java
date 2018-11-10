@@ -3,69 +3,83 @@ package org.openaudible.desktop.swt.gui.progress;
 import org.eclipse.jface.resource.JFaceResources;
 import org.openaudible.progress.IProgressTask;
 
-public class ProgressTask extends Thread implements IProgressTask {
+public class ProgressTask extends Thread implements IProgressTask
+{
 	protected ProgressDialog progress;
-	
-	private ProgressTask() {
+
+	private ProgressTask()
+	{
 		super(JFaceResources.getString("ProgressMonitorDialog.title"));
 	}
-	
-	public ProgressTask(ProgressDialog p, String name) {
+
+	public ProgressTask(ProgressDialog p, String name)
+	{
 		super(name);
 		progress = p;
 	}
-	
-	public ProgressTask(String name) {
+
+	public ProgressTask(String name)
+	{
 		super(name);
 	}
-	
-	public void setProgress(ProgressDialog p) {
+
+	public void setProgress(ProgressDialog p)
+	{
 		progress = p;
 		boolean cancancel = canCancel();
 		p.setCancelable(cancancel);
 	}
-	
-	public void setTask(String t, String s) {
+
+	public void setTask(String t, String s)
+	{
 		progress.setTaskAsync(t, s);
 	}
-	
-	public boolean needUpdate() throws InterruptedException {
+
+	public boolean needUpdate() throws InterruptedException
+	{
 		return progress.needUpdate();
 	}
-	
-	public void beginWork(String name, int totalWork) {
+
+	public void beginWork(String name, int totalWork)
+	{
 		progress.getProgressMonitor().beginTask(name, totalWork);
 	}
-	
-	public void worked(int i) {
+
+	public void worked(int i)
+	{
 		progress.getProgressMonitor().worked(i);
 	}
-	
-	public boolean isDone() {
+
+	public boolean isDone()
+	{
 		return !isAlive();
 	}
-	
-	public void userCanceled() {
+
+	public void userCanceled()
+	{
 		progress.setTaskAsync("Canceling...", null);
 	}
-	
-	public boolean canCancel() {
+
+	public boolean canCancel()
+	{
 		return true;
 	}
-	
+
 	@Override
-	public void setTask(String task) {
+	public void setTask(String task)
+	{
 		setTask(task, null);
 	}
-	
+
 	@Override
-	public void setSubTask(String subtask) {
+	public void setSubTask(String subtask)
+	{
 		setTask(null, subtask);
-		
 	}
-	
+
 	@Override
-	public boolean wasCanceled() {
+	public boolean wasCanceled()
+	{
 		return progress.canceled();
 	}
 
@@ -81,5 +95,4 @@ public class ProgressTask extends Thread implements IProgressTask {
      *
      * @see IRunnableContext#run
      */
-	
 }

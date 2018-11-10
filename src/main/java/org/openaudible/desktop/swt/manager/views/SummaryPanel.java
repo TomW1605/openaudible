@@ -1,7 +1,7 @@
 package org.openaudible.desktop.swt.manager.views;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.browser.*;
+import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.openaudible.books.Book;
@@ -12,15 +12,17 @@ import org.openaudible.desktop.swt.gui.SWTAsync;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SummaryPanel implements BookListener {
+public class SummaryPanel implements BookListener
+{
 	//StyledText summary;
 	Browser summary;
 
-	SummaryPanel(Composite parent) {
+	SummaryPanel(Composite parent)
+	{
 		/*summary = new StyledText(parent, SWT.WRAP | SWT.MULTI | SWT.READ_ONLY | SWT.V_SCROLL);
 		summary.setCaret(null);
 		summary.setEditable(false);*/
-		summary = new Browser( parent, SWT.NONE );
+		summary = new Browser(parent, SWT.NONE);
 
 		GridData gd = new GridData(GridData.FILL_BOTH | GridData.GRAB_VERTICAL | GridData.GRAB_HORIZONTAL);
 		gd.horizontalSpan = 2;
@@ -28,17 +30,24 @@ public class SummaryPanel implements BookListener {
 		summary.setLayoutData(gd);
 		BookNotifier.getInstance().addListener(this);
 	}
-	
+
 	AtomicInteger cache = new AtomicInteger();
-	
+
 	@Override
-	public void booksSelected(List<Book> list) {
-		if (cache.getAndIncrement() > 0) return;
-		SWTAsync.run(new SWTAsync("update") {
+	public void booksSelected(List<Book> list)
+	{
+		if (cache.getAndIncrement() > 0)
+		{
+			return;
+		}
+		SWTAsync.run(new SWTAsync("update")
+		{
 			@Override
-			public void task() {
+			public void task()
+			{
 				cache.set(0);
-				switch (list.size()) {
+				switch (list.size())
+				{
 					case 0:
 						update(null);
 						break;
@@ -49,14 +58,12 @@ public class SummaryPanel implements BookListener {
 						update(null);
 						break;
 				}
-				
 			}
 		});
-		
 	}
-	
-	private void update(Book book) {
+
+	private void update(Book book)
+	{
 		summary.setText(book != null ? book.getSummary() : "");
 	}
-	
 }

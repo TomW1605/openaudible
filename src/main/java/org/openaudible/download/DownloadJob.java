@@ -16,6 +16,9 @@ import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.CannotWriteException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.audio.mp4.Mp4FileReader;
+import org.jaudiotagger.audio.mp4.Mp4FileWriter;
+import org.jaudiotagger.tag.TagException;
 import org.jaudiotagger.tag.mp4.Mp4Tag;
 import org.jaudiotagger.tag.mp4.field.Mp4TagTextField;
 import org.openaudible.Audible;
@@ -27,15 +30,13 @@ import org.openaudible.progress.IProgressTask;
 import org.openaudible.util.CopyWithProgress;
 import org.openaudible.util.Util;
 import org.openaudible.util.queues.IQueueJob;
-import org.jaudiotagger.audio.mp4.*;
-import org.jaudiotagger.tag.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-
-public class DownloadJob implements IQueueJob {
+public class DownloadJob implements IQueueJob
+{
 	private static final Log LOG = LogFactory.getLog(DownloadJob.class);
 	/*
 
@@ -48,15 +49,16 @@ public class DownloadJob implements IQueueJob {
 	final File destFile;
 	volatile boolean quit = false;
 	IProgressTask task;
-	
-	public DownloadJob(Book b, File destFile) {
+
+	public DownloadJob(Book b, File destFile)
+	{
 		this.b = b;
 		this.destFile = destFile;
 		assert (!destFile.exists());
 	}
-	
-	
-	public void download() throws IOException {
+
+	public void download() throws IOException
+	{
 		if (!b.has(BookElement.shortTitle) || !b.has(BookElement.genre))
 		{
 			try
@@ -69,7 +71,9 @@ public class DownloadJob implements IQueueJob {
 		}
 		String codec = b.getCodec();
 		if (codec.isEmpty())
+		{
 			codec = "LC_64_22050_stereo";
+		}
 
         /*
         https://cds.audible.com.au/download?
@@ -79,7 +83,7 @@ public class DownloadJob implements IQueueJob {
 		source=Audible&
 		type=AUDI
          */
-		
+
 		String url = "http://cds.audible.com.au/download";
 		url += "?asin=" + b.getAsin();
 		url += "&cust_id=" + b.getCust_id();
@@ -88,82 +92,96 @@ public class DownloadJob implements IQueueJob {
 		url += "&type=" + b.getType();
 
 		LOG.info("Download book: " + b + " url=" + url);
-		
+
 		File tmp = null;
 		long start = System.currentTimeMillis();
 		FileOutputStream fos = null;
 		boolean success = false;
 		HttpGet httpGet = new HttpGet(url);
 		httpGet.setHeader("User-Agent", "Audible ADM 6.6.0.19;Windows Vista  Build 9200");
-		
+
 		CloseableHttpClient httpclient = null;
 		CloseableHttpResponse response = null;
-		
-		try {
-			
+
+		try
+		{
+
 			RequestConfig defaultRequestConfig = RequestConfig.custom()
 					.setSocketTimeout(30000)
 					.build();
-			
-			
+
 			bld.setDefaultRequestConfig(defaultRequestConfig);
 			httpclient = bld.build();
-			
-			
+
 			response = httpclient.execute(httpGet);
-			
+
 			int code = response.getStatusLine().getStatusCode();
 			if (code != 200)
+			{
 				throw new IOException(response.getStatusLine().toString());
+			}
 			HttpEntity entity = response.getEntity();
 			Header ctyp = entity.getContentType();
-			if (ctyp != null) {
-				if (!ctyp.getValue().contains("audio")) {
+			if (ctyp != null)
+			{
+				if (!ctyp.getValue().contains("audio"))
+				{
 					String err = "Download error:";
-					
-					if (entity.getContentLength() < 256) {
+
+					if (entity.getContentLength() < 256)
+					{
 						err += EntityUtils.toString(entity);
 					}
 					err += " for " + b;
 					throw new IOException(err); //
 				}
 			}
-			
+
 			tmp = new File(Directories.getTmpDir(), destFile.getName() + ".part");
-			
-			if (tmp.exists()) {
+
+			if (tmp.exists())
+			{
 				boolean v = tmp.delete();
 				assert (v);
 			}
-			
+
 			fos = new FileOutputStream(tmp);
-			
+
 			CopyWithProgress.copyWithProgress(getByteReporter(), 500, entity.getContent(), fos);
-			
+
 			/// IO.copy(entity.getContent(), fos);
-			
-			if (quit) {
+
+			if (quit)
+			{
 				success = false;
 				throw new IOException("quit");
 			}
 			success = true;
-			
-		} finally {
-			
+		} finally
+		{
+
 			response.close();
 			if (fos != null)
+			{
 				fos.close();
-			
+			}
+
 			if (httpclient != null)
+			{
 				httpclient.close();
-			
-			if (success) {
-				if (tmp != null) {
+			}
+
+			if (success)
+			{
+				if (tmp != null)
+				{
 					boolean ok = tmp.renameTo(destFile);
 					if (!ok)
+					{
 						throw new IOException("failed to rename." + tmp.getAbsolutePath() + " to " + destFile.getAbsolutePath());
+					}
 				}
-				
+
 				long time = System.currentTimeMillis() - start;
 				long bytes = destFile.length();
 				double bps = bytes / (time / 1000.0);
@@ -175,7 +193,7 @@ public class DownloadJob implements IQueueJob {
 				{
 					Mp4TagTextField field;
 					AudioFile audiofile = reader.read(aaxFile);
-					Mp4Tag tag = (Mp4Tag)audiofile.getTag();
+					Mp4Tag tag = (Mp4Tag) audiofile.getTag();
 
 					field = (Mp4TagTextField) tag.getFirstField("@sti");
 					field.setContent(b.getShortTitle());
@@ -193,63 +211,75 @@ public class DownloadJob implements IQueueJob {
 				}
 
 				LOG.info("Downloaded " + destFile.getName() + " bytes=" + bytes + " time=" + time + " Kbps=" + (int) (bps / 1024.0));
-				
-			} else {
+			}
+			else
+			{
 				if (tmp != null)
+				{
 					tmp.delete();
+				}
 				destFile.delete();
 			}
-			
 		}
 	}
-	
-	private CopyWithProgress.ByteReporter getByteReporter() {
-		
-		CopyWithProgress.ByteReporter br = new CopyWithProgress.ByteReporter() {
+
+	private CopyWithProgress.ByteReporter getByteReporter()
+	{
+
+		CopyWithProgress.ByteReporter br = new CopyWithProgress.ByteReporter()
+		{
 			long startTime = System.currentTimeMillis();
-			
-			public void bytesCopied(long total) throws IOException {
+
+			public void bytesCopied(long total) throws IOException
+			{
 				double seconds = (System.currentTimeMillis() - startTime) / 1000.0;
 				double bps = total / seconds;
 				String rate = Util.instance.byteCountToString((long) bps) + "/sec";
 				String t = "Downloading " + b;
 				String s = Util.instance.byteCountToString(total) + " at " + rate;
-				
-				if (task != null) {
+
+				if (task != null)
+				{
 					task.setTask(t, s);
 				}
-				
+
 				// LOG.info(task+" "+ s);
-				if (quit) {
+				if (quit)
+				{
 					throw new IOException("quit");
 				}
 			}
 		};
-		
+
 		return br;
 	}
-	
-	public void quit() {
+
+	public void quit()
+	{
 	}
-	
+
 	@Override
-	public void processJob() throws Exception {
+	public void processJob() throws Exception
+	{
 		download();
 		// update book info, based on tags.
 		AAXParser.instance.update(b);
 	}
-	
+
 	@Override
-	public void quitJob() {
+	public void quitJob()
+	{
 		quit = true;
 	}
-	
+
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return "Download " + b;
 	}
-	
-	public void setProgress(IProgressTask task) {
+
+	public void setProgress(IProgressTask task)
+	{
 		this.task = task;
 	}
 }

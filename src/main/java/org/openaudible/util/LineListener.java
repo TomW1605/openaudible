@@ -1,5 +1,6 @@
 package org.openaudible.util;
 
-public interface LineListener {
+public interface LineListener
+{
 	void takeLine(String s) throws Exception;
 }

@@ -20,138 +20,163 @@ import org.openaudible.desktop.swt.util.shop.FontShop;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StatusPanel extends GridComposite implements BookListener, ConnectionListener {
+public class StatusPanel extends GridComposite implements BookListener, ConnectionListener
+{
 	Label stats[];
 	// Label connected;
-	
-	
-	class StatusClick extends MouseAdapter {
+
+	class StatusClick extends MouseAdapter
+	{
 		final Status status;
-		
-		StatusClick(Status s) {
+
+		StatusClick(Status s)
+		{
 			status = s;
 		}
-		
+
 		@Override
-		public void mouseDown(MouseEvent mouseEvent) {
+		public void mouseDown(MouseEvent mouseEvent)
+		{
 			super.mouseDown(mouseEvent);
 			System.out.println("click:" + status);
 			if (status.canFilterByStatusType())
+			{
 				AudibleGUI.instance.setStatusFilter(status);
+			}
 			else
+			{
 				AudibleGUI.instance.setStatusFilter(null);
-			
+			}
 		}
 	}
-	
-	StatusPanel(Composite c) {
+
+	StatusPanel(Composite c)
+	{
 		super(c, SWT.NONE);
 		initLayout(2, false, GridData.GRAB_HORIZONTAL | GridData.FILL_HORIZONTAL);
-		
+
 		BookNotifier.getInstance().addListener(this);
 		ConnectionNotifier.getInstance().addListener(this);
-		
+
 		stats = new Label[Status.values().length];
 		int index = 0;
-		for (Status e : Status.values()) {
+		for (Status e : Status.values())
+		{
 			if (!e.display())
+			{
 				continue;
+			}
 			String labelName = e.displayName();
 			Label l = newLabel();
 			l.setText(Translate.getInstance().labelName(labelName) + ": ");
 			l.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING));
-			
+
 			l.setFont(FontShop.instance.tableFontBold());
 			l.setBackground(bgColor);
-			
-			
+
 			// l.addListener(SWT.MouseHover);
 			Label d = newLabel();
 			GridData gd = new GridData(GridData.GRAB_HORIZONTAL | GridData.FILL_HORIZONTAL);
 			// gd.widthHint=120;
 			d.setLayoutData(gd);
-			
+
 			d.setFont(FontShop.instance.tableFont());
 			d.setBackground(bgColor);
 			d.setData(e);
-			
-			
+
 			// allow user to click on status and filter
 			StatusClick clickHandler = new StatusClick(e);
 			l.addMouseListener(clickHandler);
 			d.addMouseListener(clickHandler);
-			
+
 			stats[index++] = d;
 		}
-		
+
 		_update();
 	}
-	
+
 	AtomicInteger cache = new AtomicInteger();    // caches gui drawing.
-	
-	private void _update() {
+
+	private void _update()
+	{
 		boolean update = cache.getAndIncrement() == 0;
-		
-		if (!update) return;
-		
-		SWTAsync.run(new SWTAsync("update") {
+
+		if (!update)
+		{
+			return;
+		}
+
+		SWTAsync.run(new SWTAsync("update")
+		{
 			@Override
-			public void task() {
+			public void task()
+			{
 				cache.set(0);
-				
-				for (Label s : stats) {
-					if (s == null) continue;
-					
+
+				for (Label s : stats)
+				{
+					if (s == null)
+					{
+						continue;
+					}
+
 					Status e = (Status) s.getData();
 					String value = AudibleGUI.instance.getStatus(e);
 					s.setText(value);
 				}
 			}
 		});
-		
 	}
-	
+
 	@Override
-	public void booksSelected(final List<Book> list) {
+	public void booksSelected(final List<Book> list)
+	{
 		_update();
 	}
-	
+
 	@Override
-	public void bookAdded(Book book) {
-		_update();
-		
-	}
-	
-	@Override
-	public void bookUpdated(Book book) {
+	public void bookAdded(Book book)
+	{
 		_update();
 	}
-	
+
 	@Override
-	public void booksUpdated() {
+	public void bookUpdated(Book book)
+	{
 		_update();
 	}
-	
-	
+
 	@Override
-	public void connectionChanged(boolean connected) {
+	public void booksUpdated()
+	{
 		_update();
 	}
-	
+
 	@Override
-	public AudibleAccountPrefs getAccountPrefs(AudibleAccountPrefs in) {
+	public void connectionChanged(boolean connected)
+	{
+		_update();
+	}
+
+	@Override
+	public AudibleAccountPrefs getAccountPrefs(AudibleAccountPrefs in)
+	{
 		return in;
 	}
-	
-	public enum Status {
+
+	public enum Status
+	{
 		Connected, Books, Hours, AAX_Files, MP3_Files, To_Download, To_Convert, Downloading, Converting;  //Connection,
-		
-		public String displayName() {
+
+		public String displayName()
+		{
 			return name().replace('_', ' ');
 		}     // TODO: Translations
-		
-		public boolean display() {
-			switch (this) {
+
+		public boolean display()
+		{
+			switch (this)
+			{
 				case To_Convert:
 				case Downloading:
 				case To_Download:
@@ -160,29 +185,31 @@ public class StatusPanel extends GridComposite implements BookListener, Connecti
 				case Connected:
 				case Hours:
 					return true;
-				
+
 				case AAX_Files:
 				case Books:
 					return true;
-				
+
 				default:
 					assert (false);
-				
 			}
-			
+
 			return true;
 		}
-		
-		public boolean canFilterByStatusType() {
+
+		public boolean canFilterByStatusType()
+		{
 			return canFilterByStatusType(this);
 		}
-		
-		public static boolean canFilterByStatusType(Status result) {
-			switch (result) {
+
+		public static boolean canFilterByStatusType(Status result)
+		{
+			switch (result)
+			{
 				case Connected:
 				case Hours:
 					return false;
-				
+
 				case Books:
 				case AAX_Files:
 				case MP3_Files:
@@ -193,18 +220,16 @@ public class StatusPanel extends GridComposite implements BookListener, Connecti
 					return true;
 				default:
 					assert (false);
-				
 			}
 			return false;
 		}
-		
+
 	}
-	
+
 	@Override
-	public void loginFailed(String url, String html) {
+	public void loginFailed(String url, String html)
+	{
 		// TODO Auto-generated method stub
-		
+
 	}
-	
-	
 }

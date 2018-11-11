@@ -224,6 +224,16 @@ public class Book implements Comparable<Book>, Serializable
 		set(BookElement.infoLink, infoLink);
 	}
 
+	public String getImageLink()
+	{
+		return get(BookElement.imageLink);
+	}
+
+	public void setImageLink(String imageLink)
+	{
+		set(BookElement.imageLink, imageLink);
+	}
+
 	public String getAuthor()
 	{
 		return get(BookElement.author);

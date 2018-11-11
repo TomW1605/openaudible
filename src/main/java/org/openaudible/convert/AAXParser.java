@@ -133,7 +133,7 @@ public enum AAXParser
 		Mp4FileReader reader = new Mp4FileReader();
 		AudioFile audiofile = reader.read(aaxFile);
 		Mp4Tag tag = (Mp4Tag) audiofile.getTag();
-		tagsToBook(tag, b, audiofile);
+		tagsToBook(tag, b);
 
 		ffmpeg(b, aaxFile);
 
@@ -350,7 +350,7 @@ public enum AAXParser
 			AudioFile audiofile = reader.read(aaxFile);
 			Mp4Tag tag = (Mp4Tag) audiofile.getTag();
 			LOG.info("" + audiofile + ", tag=" + tag);
-			tagsToBook(tag, b, audiofile);
+			tagsToBook(tag, b);
 		} catch (Throwable th)
 		{
 			th.printStackTrace();
@@ -390,6 +390,39 @@ public enum AAXParser
 		{
 			throw new Exception("product id mismatch for " + book + " and " + aaxBook);
 		}
+
+		Mp4FileReader reader = new Mp4FileReader();
+		AudioFile audiofile = reader.read(aaxFile);
+		Mp4Tag tag = (Mp4Tag) audiofile.getTag();
+		Mp4FileWriter writer = new Mp4FileWriter();
+		Mp4TagTextField field;
+		if (!aaxBook.getShortTitle().equals(book.getShortTitle()))
+		{
+			field = (Mp4TagTextField) tag.getFirstField("@sti");
+			field.setContent(book.getShortTitle());
+			tag.setField(field);
+			aaxBook.setShortTitle(book.getShortTitle());
+		}
+
+		if (!aaxBook.getGenre().equals(book.getGenre()))
+		{
+			field = (Mp4TagTextField) tag.getFirstField("©gen");
+			field.setContent(book.getGenre());
+			tag.setField(field);
+			aaxBook.setGenre(book.getGenre());
+		}
+
+		if (!aaxBook.getSummary().equals(book.getSummary()))
+		{
+			field = (Mp4TagTextField) tag.getFirstField("©cmt");
+			field.setContent(book.getSummary());
+			tag.setField(field);
+			aaxBook.setSummary(book.getSummary());
+		}
+
+		audiofile.setTag(tag);
+		writer.write(audiofile);
+
 		for (BookElement e : BookElement.values())
 		{
 			String value = aaxBook.get(e);
@@ -442,7 +475,7 @@ public enum AAXParser
 		}
 	}
 
-	public void tagsToBook(Mp4Tag tag, Book b, AudioFile audiofile)
+	public void tagsToBook(Mp4Tag tag, Book b)
 	{
 		if (LOG.isTraceEnabled())
 		{
@@ -452,40 +485,15 @@ public enum AAXParser
 		b.setAuthor(getValue(tag, "©ART"));
 		b.setNarratedBy(getValue(tag, "©nrt"));
 		b.setFullTitle(getValue(tag, "©nam"));
-		String sTitle = getValue(tag, "@sti");
+		b.setShortTitle(getValue(tag, "@sti"));
 		b.setRelease_date(getValue(tag, "rldt"));
 		b.setPublisher(getValue(tag, "©pub"));
 		b.setProduct_id(getValue(tag, "prID"));
-		b.setSummary(getValue(tag, "©des"));
-		b.setDescription(getValue(tag, "©cmt"));
-		String gen = getValue(tag, "©gen");
+		b.setSummary(getValue(tag, "©cmt"));		//these 2 might need to be swapped
+		b.setDescription(getValue(tag, "©des"));	//so also do the one on line 430
+		b.setGenre(getValue(tag, "©gen"));
 		b.setCopyright(getValue(tag, "cprt"));
 		b.setAsin(getValue(tag, "CDEK"));
-
-		Mp4FileWriter writer = new Mp4FileWriter();
-		Mp4TagTextField field;
-		if (!sTitle.equals(b.getShortTitle()))
-		{
-			field = (Mp4TagTextField) tag.getFirstField("@sti");
-			field.setContent(b.getShortTitle());
-			tag.setField(field);
-		}
-
-		if (!gen.equals(b.getGenre()))
-		{
-			field = (Mp4TagTextField) tag.getFirstField("©gen");
-			field.setContent(b.getGenre());
-			tag.setField(field);
-		}
-
-		audiofile.setTag(tag);
-		try
-		{
-			writer.write(audiofile);
-		} catch (CannotWriteException e)
-		{
-			e.printStackTrace();
-		}
 	}
 
 	/*

@@ -21,6 +21,8 @@ import org.openaudible.convert.AAXParser;
 import org.openaudible.convert.BookMerge;
 import org.openaudible.convert.ConvertQueue;
 import org.openaudible.convert.LookupKey;
+import org.openaudible.desktop.swt.gui.progress.ProgressTask;
+import org.openaudible.desktop.swt.manager.AudibleGUI;
 import org.openaudible.download.DownloadQueue;
 import org.openaudible.progress.IProgressTask;
 import org.openaudible.util.CopyWithProgress;
@@ -563,7 +565,9 @@ public class Audible implements IQueueListener<Book>
 
 //        if (booksUpdated > 0 && quick)
 //            updateLibrary(false);
-
+		//TODO add option to disable this
+		//TODO close first dialog box first
+		updateInfo();
 		LOG.info("Updated " + list.size() + " books");
 	}
 
@@ -817,11 +821,7 @@ public class Audible implements IQueueListener<Book>
 		}
 
 		LOG.info("Getting info for " + list.size() + " books");
-		for (Book b : list)
-		{
-			LOG.info("Getting info for " + b);
-			s.getInfo(b);
-		}
+		AudibleGUI.instance.refreshBookInfo(list);
 	}
 
 	public void updateInfo(Book b) throws Exception

@@ -219,7 +219,7 @@ public class Preferences extends Dialog
 	protected Control createDialogArea(Composite parent)
 	{
 		GridComposite c = new GridComposite(parent, SWT.NONE, 1, false, GridData.FILL_HORIZONTAL);
-		c.setWidthHint(c, 500);
+		c.setWidthHint(c, 700);
 		createAccountGroup(c);
 		createDirectoryGroup(c);
 		createAutomationGroup(c);

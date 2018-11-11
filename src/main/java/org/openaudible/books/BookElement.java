@@ -4,7 +4,7 @@ package org.openaudible.books;
 //
 public enum BookElement
 {
-	product_id, codec, asin, infoLink, fullTitle, author, narratedBy, summary, description, duration, format, rating_average, rating_count, release_date, purchase_date, publisher, genre, shortTitle, copyright, user_id, cust_id, order_number, author_link, type, source;
+	product_id, codec, asin, infoLink, imageLink, fullTitle, author, narratedBy, summary, description, duration, format, rating_average, rating_count, release_date, purchase_date, publisher, genre, shortTitle, copyright, user_id, cust_id, order_number, author_link, type, source;
 
 	public static BookElement findByName(String s)
 	{

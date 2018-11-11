@@ -1,5 +1,6 @@
 package org.openaudible.desktop.swt.manager;
 
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -7,6 +8,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.openaudible.Audible;
@@ -25,8 +27,10 @@ import org.openaudible.desktop.swt.gui.SWTAsync;
 import org.openaudible.desktop.swt.gui.progress.ProgressDialog;
 import org.openaudible.desktop.swt.gui.progress.ProgressTask;
 import org.openaudible.desktop.swt.manager.views.AudibleBrowser;
+import org.openaudible.desktop.swt.manager.views.CaptchaDialog;
 import org.openaudible.desktop.swt.manager.views.PasswordDialog;
 import org.openaudible.desktop.swt.manager.views.StatusPanel;
+import org.openaudible.desktop.swt.util.shop.PaintShop;
 import org.openaudible.feeds.pagebuilder.WebPage;
 import org.openaudible.util.HTMLUtil;
 import org.openaudible.util.queues.IQueueJob;
@@ -54,7 +58,8 @@ public class AudibleGUI implements BookListener, ConnectionListener
 	boolean loggedIn = false;
 	String textFilter = "";
 	AudibleBrowser browser = null;
-	AudibleAccountPrefs userPass = null;
+	public AudibleAccountPrefs userPass = null;
+	public String captcha = null;
 
 	public AudibleGUI()
 	{
@@ -137,10 +142,9 @@ public class AudibleGUI implements BookListener, ConnectionListener
 					int status = gp.open();
 					if (status == Window.OK)
 					{
-						userPass.audibleUser = gp.getUserName();
-						userPass.audiblePassword = gp.getPassword();
+						gp.getUserName();
+						gp.getPassword();
 					}
-					userPass = null;
 				}
 			});
 			LOG.info("Done getting credentials");
@@ -148,6 +152,27 @@ public class AudibleGUI implements BookListener, ConnectionListener
 			userPass = null;
 		}
 		return in;
+	}
+
+	public String getCaptcha(String img)
+	{
+		SWTAsync.block(new SWTAsync("get captcha")
+		{
+			@Override
+			public void task()
+			{
+				CaptchaDialog gp = new CaptchaDialog(null, "Audible Captcha Required",
+						"Please enter Captcha", img);
+				int status = gp.open();
+				if (status == Window.OK)
+				{
+					gp.getCaptcha();
+				}
+				//captcha = null;
+			}
+		});
+		LOG.info("Done getting captcha");
+		return captcha;
 	}
 
 
@@ -448,7 +473,7 @@ public class AudibleGUI implements BookListener, ConnectionListener
 			page = audible.getAudibleURL();
 		}
 
-		browse(page);
+		//browse(page);
 		return null;
 	}
 
@@ -605,7 +630,22 @@ public class AudibleGUI implements BookListener, ConnectionListener
 		return false;
 	}
 
-	public boolean canViewInSystem()
+	public boolean canViewAAX()
+	{
+
+		if (GUI.isLinux())
+		{
+			return false;        // TODO: Fix for Linux. How to display a file in "desktop"
+		}
+		Book b = onlyOneSelected();
+		if (b != null)
+		{
+			return audible.hasAAX(b);
+		}
+		return false;
+	}
+
+	public boolean canViewMP3()
 	{
 
 		if (GUI.isLinux())
@@ -707,7 +747,7 @@ public class AudibleGUI implements BookListener, ConnectionListener
 		}
 	}
 
-	public void explore()
+	public void showMP3()
 	{
 		try
 		{
@@ -716,8 +756,24 @@ public class AudibleGUI implements BookListener, ConnectionListener
 			if (m.exists())
 			{
 				GUI.explore(m);
+				//Desktop.getDesktop().open(m.getParentFile());
+			}
+		} catch (Throwable th)
+		{
+			showError(th, "showing file in system");
+		}
+	}
 
-				// Desktop.getDesktop().open(m.getParentFile());
+	public void showAAX()
+	{
+		try
+		{
+			Book b = onlyOneSelected();
+			File m = audible.getAAXFileDest(b);
+			if (m.exists())
+			{
+				GUI.explore(m);
+				//Desktop.getDesktop().open(m.getParentFile());
 			}
 		} catch (Throwable th)
 		{
@@ -804,6 +860,54 @@ public class AudibleGUI implements BookListener, ConnectionListener
 					scraper.setProgress(this);
 					int count = 0;
 					List<Book> selected = getSelected();
+					for (Book b : selected)
+					{
+						count++;
+						setTask("" + count + " of " + selected.size() + " " + b.toString());
+						audible.updateInfo(b);
+						AAXParser.instance.update(b);
+						bookNotifier.bookUpdated(b);
+					}
+					audible.save();
+					setTask("Completed", "");
+					bookNotifier.booksUpdated();
+				} catch (Exception e)
+				{
+					if (!wasCanceled())
+					{
+						showError(e, "refreshing book information");
+					}
+				} finally
+				{
+					audible.setProgress(null);
+					if (scraper != null)
+					{
+						scraper.setProgress(null);
+					}
+				}
+			}
+		};
+
+		ProgressDialog.doProgressTask(task);
+	}
+
+	public void refreshBookInfo(ArrayList<Book> selected)
+	{
+
+		ProgressTask task = new ProgressTask("Refresh Book Info")
+		{
+			public void run()
+			{
+				AudibleScraper scraper = null;
+
+				try
+				{
+					audible.setProgress(this);
+
+					setTask("Connecting", "");
+					scraper = audible.getScraper();
+					scraper.setProgress(this);
+					int count = 0;
 					for (Book b : selected)
 					{
 						count++;

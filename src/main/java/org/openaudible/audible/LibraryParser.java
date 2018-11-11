@@ -57,7 +57,7 @@ public enum LibraryParser
 		for (HtmlElement a : buttons)
 		{
 			// System.out.println(a);
-			if (a.toString().toLowerCase().contains("pagenext"))
+			if (a.toString().toLowerCase().contains("pagenext") && !a.toString().toLowerCase().contains("disabled=\"true\""))
 			{
 				assert (next == null);
 				next = a;

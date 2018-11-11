@@ -15,13 +15,18 @@ import org.openaudible.AudibleAccountPrefs;
 import org.openaudible.Directories;
 import org.openaudible.books.Book;
 import org.openaudible.books.BookElement;
+import org.openaudible.desktop.swt.manager.AudibleGUI;
 import org.openaudible.progress.IProgressTask;
 import org.openaudible.util.HTMLUtil;
 import org.w3c.dom.Node;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 // audible.com web page scraper
@@ -30,7 +35,7 @@ public class AudibleScraper
 {
 	final static String cookiesFileName = "cookies.json";
 	private static final Log LOG = LogFactory.getLog(AudibleScraper.class);
-	static int maxLoginAttempts = 2;
+	static int maxLoginAttempts = 10;
 	final AudibleAccountPrefs account;
 	private final AudibleClient webClient;
 	public HtmlPage page;
@@ -261,10 +266,20 @@ public class AudibleScraper
 		{
 			throw new IOException("bad pass elem");
 		}
-		HtmlElement ap_captcha_table = findById("ap_captcha_table");
-		HtmlElement captchaImageDiv = findById("ap_captcha_img");
+		HtmlImage captchaImage = (HtmlImage) findById("auth-captcha-image");
+		HtmlInput captcha = (HtmlInput) findById("auth-captcha-guess");
 
-		if (captchaImageDiv != null || ap_captcha_table != null)
+		if (captchaImage != null && captcha != null)
+		{
+			LOG.info("Appears to be a captcha... I am a bot.");
+			try(InputStream in = new URL(captchaImage.getAttribute("src")).openStream()){
+				Files.copy(in, Paths.get(Directories.getTmpDir().getPath()+"\\captcha.jpg"), StandardCopyOption.REPLACE_EXISTING);
+			}
+			String captchaText = AudibleGUI.instance.getCaptcha(Directories.getTmpDir().getPath()+"\\captcha.jpg");
+			captcha.setValueAttribute(captchaText);
+			//return false;
+		}
+		else if (captchaImage != null || captcha != null)
 		{
 			LOG.info("Appears to be a captcha... I am a bot.");
 			return false;
@@ -311,7 +326,7 @@ public class AudibleScraper
 		}
 
 		Node signIn = HTMLUtil.findByName("signIn", page);
-		HtmlAnchor sI = getAnchor("/sign-in");
+		HtmlAnchor sI = getAnchor("/signin");
 
 		if (signIn != null || sI != null)
 		{
@@ -320,7 +335,7 @@ public class AudibleScraper
 		}
 
 		HtmlAnchor signOut = getAnchor("/signout");
-		HtmlAnchor accountDetails = getAnchor("/account-details");
+		HtmlAnchor accountDetails = getAnchor("/account/overview");
 
 		if (accountDetails != null || signOut != null)
 		{
@@ -377,7 +392,7 @@ public class AudibleScraper
 				return;
 			}
 
-			HtmlAnchor signIn = getAnchor("/sign-in");
+			HtmlAnchor signIn = getAnchor("/signin");
 			if (signIn != null)
 			{
 				setPage(signIn.click());
@@ -574,7 +589,7 @@ public class AudibleScraper
 			getProgress().setSubTask(task);
 		}
 		LOG.info("setURL:" + u);
-		HtmlPage p = getWebClient().getPage(u, progress);
+		HtmlPage p = getWebClient().getPage(u);
 		if (p != null)
 		{
 			setPage(p);

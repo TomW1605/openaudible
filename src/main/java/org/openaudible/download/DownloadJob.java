@@ -98,7 +98,8 @@ public class DownloadJob implements IQueueJob
 		FileOutputStream fos = null;
 		boolean success = false;
 		HttpGet httpGet = new HttpGet(url);
-		httpGet.setHeader("User-Agent", "Audible ADM 6.6.0.19;Windows Vista  Build 9200");
+		httpGet.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
+		//"Audible ADM 6.6.0.19;Windows Vista  Build 9200");
 
 		CloseableHttpClient httpclient = null;
 		CloseableHttpResponse response = null;
@@ -201,6 +202,10 @@ public class DownloadJob implements IQueueJob
 
 					field = (Mp4TagTextField) tag.getFirstField("©gen");
 					field.setContent(b.getGenre());
+					tag.setField(field);
+
+					field = (Mp4TagTextField) tag.getFirstField("©cmt");
+					field.setContent(b.getSummary());
 					tag.setField(field);
 
 					audiofile.setTag(tag);

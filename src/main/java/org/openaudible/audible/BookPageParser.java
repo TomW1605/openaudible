@@ -4,11 +4,26 @@ import com.gargoylesoftware.htmlunit.html.DomNode;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.openaudible.Audible;
+import org.openaudible.Directories;
 import org.openaudible.books.Book;
 import org.openaudible.books.BookElement;
+import org.openaudible.util.CopyWithProgress;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,6 +90,13 @@ public enum BookPageParser
 					LOG.error("cdata json parse error", th);
 				}
 			}
+		}
+		try
+		{
+			downloadImage(b);
+		} catch (IOException e)
+		{
+			e.printStackTrace();
 		}
 
 		return true;
@@ -159,6 +181,9 @@ public enum BookPageParser
 				case "publisher":
 					elem = BookElement.publisher;
 					break;
+				case "image":
+					elem = BookElement.imageLink;
+					break;
 				default:
 					//LOG.info("Skipping "+k+" = "+ str);
 					break;
@@ -206,7 +231,7 @@ public enum BookPageParser
 				}
 				if (!genre.isEmpty() && !subGenre.isEmpty())
 				{
-					b.setGenre(genre + "->" + subGenre);
+					b.setGenre(genre + " > " + subGenre);
 				}
 			}
 		}
@@ -242,4 +267,104 @@ public enum BookPageParser
 		return out;
 	}
 
+	void downloadImage(Book b) throws IOException
+	{
+		String url = b.getImageLink();
+		File destFile = Audible.instance.getImageFileDest(b);
+		HttpClientBuilder bld = HttpClients.custom();
+
+		File tmp = null;
+		FileOutputStream fos = null;
+		boolean success = false;
+		HttpGet httpGet = new HttpGet(url);
+		httpGet.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36");
+		//"Audible ADM 6.6.0.19;Windows Vista  Build 9200");
+
+		CloseableHttpClient httpclient = null;
+		CloseableHttpResponse response = null;
+
+		try
+		{
+			RequestConfig defaultRequestConfig = RequestConfig.custom()
+					.setSocketTimeout(30000)
+					.build();
+
+			bld.setDefaultRequestConfig(defaultRequestConfig);
+			httpclient = bld.build();
+
+			response = httpclient.execute(httpGet);
+
+			int code = response.getStatusLine().getStatusCode();
+			if (code != 200)
+			{
+				throw new IOException(response.getStatusLine().toString());
+			}
+			HttpEntity entity = response.getEntity();
+			Header ctyp = entity.getContentType();
+			if (ctyp != null)
+			{
+				if (!ctyp.getValue().contains("image"))
+				{
+					String err = "Download error:";
+
+					if (entity.getContentLength() < 256)
+					{
+						err += EntityUtils.toString(entity);
+					}
+					err += " for " + b;
+					throw new IOException(err);
+				}
+			}
+
+			tmp = new File(Directories.getTmpDir(), destFile.getName() + ".jpg");
+
+			if (tmp.exists())
+			{
+				boolean v = tmp.delete();
+				assert (v);
+			}
+
+			fos = new FileOutputStream(tmp);
+
+			CopyWithProgress.copyWithProgress(total -> {}, 500, entity.getContent(), fos);
+
+			/// IO.copy(entity.getContent(), fos);
+
+			success = true;
+		} finally
+		{
+
+			response.close();
+			if (fos != null)
+			{
+				fos.close();
+			}
+
+			if (httpclient != null)
+			{
+				httpclient.close();
+			}
+
+			if (success)
+			{
+				if (tmp != null)
+				{
+					boolean ok = tmp.renameTo(destFile);
+					if (!ok)
+					{
+						tmp.delete();
+						throw new IOException("failed to rename." + tmp.getAbsolutePath() + " to " + destFile.getAbsolutePath());
+					}
+				}
+			}
+			else
+			{
+				if (tmp != null)
+				{
+					tmp.delete();
+				}
+				destFile.delete();
+			}
+		}
+	}
 }

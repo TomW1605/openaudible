@@ -191,8 +191,10 @@ public abstract class GUI implements ITranslatable
 				break;
 			case win:
 				cmdLine.add("Explorer ");
-				cmdLine.add("/select,");
-
+				if (!m.isDirectory())
+				{
+					cmdLine.add("/select,");
+				}
 				break;
 			case linux:
 				// gio open %s
@@ -211,7 +213,7 @@ public abstract class GUI implements ITranslatable
 			cmdLine.add(m.getAbsolutePath());
 
 			SimpleProcess p = new SimpleProcess(cmdLine);
-			p.run();
+			//p.run();
 
 			Results r = p.getResults();
 			logger.info(r.getErrorString());

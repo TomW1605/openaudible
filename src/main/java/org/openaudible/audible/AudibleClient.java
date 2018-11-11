@@ -8,8 +8,6 @@ import com.gargoylesoftware.htmlunit.util.WebConnectionWrapper;
 import net.sourceforge.htmlunit.corejs.javascript.Context;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.openaudible.progress.IProgressTask;
-import org.openaudible.progress.NullProgressTask;
 
 import java.io.IOException;
 import java.util.logging.Handler;
@@ -22,18 +20,16 @@ public class AudibleClient extends WebClient
 {
 	private static final Log LOG = LogFactory.getLog(AudibleClient.class);
 	static Logger system = Logger.getLogger("AudibleClient");
-	Cache cache = new Cache();
+	//Cache cache = new Cache();
 	boolean useJS = true;
-	protected boolean allowNetworkAccess = true;        // if set to false, disallow navigation, clicks, etc.
-	protected HtmlPage lastPage;
-
 	/*
 		String DEFAULT_MOBILE_USER_AGENT_STRING = "Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25";
 		String netscape4 = "Mozilla/4.08 [en] (WinNT; I ;Nav)";
 		String chrome = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36";
 	*/
 	// want a consistent user agent.. but not sure how much it makes a difference, if any.
-	public static String swtWindows = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; Trident/7.0; rv:11.0) like Gecko";
+	public static String swtWindows = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36";
+	//"Mozilla/5.0 (Windows NT 10.0; Win64; x64; Trident/7.0; rv:11.0) like Gecko";
 
 	public AudibleClient()
 	{
@@ -46,7 +42,8 @@ public class AudibleClient extends WebClient
 
 		// Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36
 
-		cache.setMaxSize(500);
+		//cache.clear();
+		//cache.setMaxSize(500);
 		// this.setCache(cache);
 		final boolean maxDebug = false;
 
@@ -143,37 +140,5 @@ public class AudibleClient extends WebClient
 			this.getOptions().setJavaScriptEnabled(b);
 		}
 		return p;
-	}
-
-	public void throwIfNetworkDisabled() throws AudibleLoginError
-	{
-		if (!allowNetworkAccess)
-		{
-			throw new AudibleLoginError("network disabled");
-		}
-	}
-
-	@Override
-	public HtmlPage getPage(String url) throws IOException, FailingHttpStatusCodeException
-	{
-		HtmlPage p = getPage(url, new NullProgressTask());
-		lastPage = p;
-		return p;
-	}
-
-	public HtmlPage getPage(String url, IProgressTask task) throws IOException, FailingHttpStatusCodeException
-	{
-		HtmlPage p = super.getPage(url);
-		lastPage = p;
-		return p;
-	}
-
-	public HtmlPage getLastPage()
-	{
-		return lastPage;
-	}
-
-	public void stop()
-	{
 	}
 }

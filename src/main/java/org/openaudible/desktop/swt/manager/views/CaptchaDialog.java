@@ -7,6 +7,7 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -17,13 +18,13 @@ import org.openaudible.desktop.swt.util.shop.*;
 import org.openaudible.util.Platform;
 
 /**
- * Class displays a Dialog prompting for a username and a password. Will return
+ * Class displays a Dialog prompting for a username and a captcha. Will return
  * a BASE64 encoded inputValue that can be used to auth to a webserver.
  *
  * @author <a href="mailto:bpasero@rssowl.org">Benjamin Pasero </a>
  * @version 1.0.2
  */
-public class PasswordDialog extends TitleAreaDialog implements KeyListener
+public class CaptchaDialog extends TitleAreaDialog implements KeyListener
 {
 
 	/**
@@ -32,11 +33,10 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 	private static final int dialogMinWidth = 320;
 
 	private String dialogMessage;
-	private String passwordString = "";
-	private String userString = "";
-	private Text password;
-	private Text user;
+	private String captchaString = "";
+	private Text captcha;
 	private String title;
+	private Image captchaImage;
 
 	// private Text username;
 
@@ -48,14 +48,12 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 	 * Note that the <code>open</code> method blocks for input dialogs.
 	 * </p>
 	 */
-	public PasswordDialog(Shell parentShell, String dialogTitle, String dialogMessage, String user,
-						  String pass)
+	public CaptchaDialog(Shell parentShell, String dialogTitle, String dialogMessage, String img)
 	{
 		super(parentShell);
 		this.title = dialogTitle;
-		this.passwordString = pass;
-		this.userString = user;
 		this.dialogMessage = dialogMessage;
+		this.captchaImage = PaintShop.getImage(img);
 	}
 
 	/**
@@ -63,24 +61,15 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 	 *
 	 * @return the input string
 	 */
-	public void getPassword()
+	public void getCaptcha()
 	{
-		AudibleGUI.instance.userPass.audiblePassword =  passwordString;
+		AudibleGUI.instance.captcha = captchaString;
+		//return captchaString;
 	}
 
-	public void getUserName()
+	public void setCaptcha(String p)
 	{
-		AudibleGUI.instance.userPass.audibleUser =  userString;
-	}
-
-	public void setPassword(String p)
-	{
-		passwordString = p;
-	}
-
-	public void setUserName(String u)
-	{
-		userString = u;
+		captchaString = p;
 	}
 
 	/**
@@ -93,20 +82,18 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 		/** Set the inputValue if OK is pressed */
 		if (buttonId == IDialogConstants.OK_ID)
 		{
-
-			userString = user.getText();
-			passwordString = password.getText();
+			captchaString = captcha.getText();
 		}
 		else
 		{
-			userString = passwordString = null;
+			captchaString = null;
 		}
 
 		super.buttonPressed(buttonId);
 	}
 
 	/**
-	 * @see org.eclipse.jface.window.Window#configureShell(org.eclipse.swt.widgets.Shell)
+	 * @see Window#configureShell(Shell)
 	 */
 	@Override
 	protected void configureShell(Shell shell)
@@ -123,7 +110,7 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 	}
 
 	/**
-	 * @see org.eclipse.jface.dialogs.Dialog#createButtonsForButtonBar(org.eclipse.swt.widgets.Composite)
+	 * @see org.eclipse.jface.dialogs.Dialog#createButtonsForButtonBar(Composite)
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent)
@@ -165,37 +152,31 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 
 		new Label(composite, SWT.NONE);
 
-		/** Password Label */
-		Label userLabel = new Label(composite, SWT.NONE);
-		userLabel.setText(GUI.i18n.getTranslation("LABEL_USERNAME") + ": ");
-		userLabel.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING));
-		userLabel.setFont(FontShop.instance.dialogFont());
+		Label captchaImageLabel = new Label(parent, SWT.BORDER_SOLID);
+		GridData gd = new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.VERTICAL_ALIGN_BEGINNING);
+		//gd.widthHint = imageSize;
+		//gd.heightHint = imageSize;
+		captchaImageLabel.setLayoutData(gd);
 
-		/** USER input field */
-		user = new Text(composite, SWT.SINGLE | SWT.BORDER);
-		user.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		user.setFont(FontShop.instance.dialogFont());
-		user.setFocus();
-		user.setText(userString);
+		captchaImageLabel.setImage(captchaImage);
 
-		/** Password Label */
-		Label passwordLabel = new Label(composite, SWT.NONE);
-		passwordLabel.setText(GUI.i18n.getTranslation("LABEL_PASSWORD") + ": ");
-		passwordLabel.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING));
-		passwordLabel.setFont(FontShop.instance.dialogFont());
+		/** captcha Label */
+		Label captchaLabel = new Label(composite, SWT.NONE);
+		captchaLabel.setText("captcha: ");
+		captchaLabel.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING));
+		captchaLabel.setFont(FontShop.instance.dialogFont());
 
 		/** Password input field */
-		password = new Text(composite, SWT.SINGLE | SWT.BORDER | SWT.PASSWORD);
-		password.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		password.setFont(FontShop.instance.dialogFont());
-		// password.setFocus();
-		password.setText(passwordString);
+		captcha = new Text(composite, SWT.SINGLE | SWT.BORDER);
+		captcha.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		captcha.setFont(FontShop.instance.dialogFont());
+		// captcha.setFocus();
+		captcha.setText(captchaString);
 
 		/** Tweak Text Widget */
-		WidgetShop.tweakTextWidget(password);
+		WidgetShop.tweakTextWidget(captcha);
 
-		password.addKeyListener(this);
-		user.addKeyListener(this);
+		captcha.addKeyListener(this);
 
 		/** Spacer */
 		new Label(composite, SWT.NONE);
@@ -237,13 +218,9 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 		LayoutShop.positionShell(getShell());
 		Button ok = getButton(0);
 
-		if (userString.length() == 0)
+		if (captchaString.length() == 0)
 		{
-			user.forceFocus();
-		}
-		else if (passwordString.length() == 0)
-		{
-			password.forceFocus();
+			captcha.forceFocus();
 		}
 		else
 		{
@@ -281,19 +258,5 @@ public class PasswordDialog extends TitleAreaDialog implements KeyListener
 		int widthHint = convertHorizontalDLUsToPixels(IDialogConstants.BUTTON_WIDTH);
 		data.widthHint = Math.max(widthHint, button.computeSize(SWT.DEFAULT, SWT.DEFAULT, true).x);
 		button.setLayoutData(data);
-	}
-
-	public static PasswordDialog getPasswordForSite(Shell shell, String user, String pass)
-	{
-		PasswordDialog gp = new PasswordDialog(shell, GUI.i18n.getTranslation("PASSWORD_TITLE"),
-				GUI.i18n.getTranslation("PASSWORD_MESSAGE"),
-				user, pass);
-
-		int status = gp.open();
-		if (status == Window.OK)
-		{
-			return gp;
-		}
-		return null;
 	}
 }

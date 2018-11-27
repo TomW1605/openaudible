@@ -1,7 +1,10 @@
-# Fork
+# OpenAudible
+An open source desktop application for downloading and managing your Audible audiobooks.
+
+## Fork
 This is a fork of the master repository as of version 1.2.3. As such it is missing many of the features of the original program however i have made changes to make it more useful for Australian users. There are other changes but i really can't be bothered listing them so if you want to know then download and compile the code and see for your self.
 
-# TODO
+## TODO
  - [ ] Check captcha support (fix image not displaying)
  - [ ] Add series (customizable if can’t get from audible)
  - [ ] Make table headings customizable
@@ -13,17 +16,8 @@ This is a fork of the master repository as of version 1.2.3. As such it is missi
  - [ ] option to trim first chapter from mp3 (sometimes contains annoying legal stuff)
  - [ ] minimise to tray when converting/downloading
  - [ ] notification when finished conversion/download
-
-# OpenAudible
-An open source desktop application for downloading and managing your Audible audiobooks.
-
-## Latest Release
-
-[Download](https://openaudible.org) installers for Windows, Mac and Linux.
-
-More information is available at the project home page [openaudible.org](http://openaudible.org).
-
-Note: Due to various constraints, the posted github version may be behind the currently posted binary.
+ - [ ] option to add MP3 to itunes
+ - [ ] option to ajust volume of MP3 to standard level
 
 ## Features
 - Import audible books from your account
